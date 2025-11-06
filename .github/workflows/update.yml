@@ -66,9 +66,6 @@ jobs:
             open_issues=$(echo "$data" | jq -r .open_issues_count)
             pushed_at=$(echo "$data" | jq -r .pushed_at)
 
-            # ラベル用にリポジトリ名を加工（スラッシュをハイフンに変換）
-            repo_label=$(echo "$repo" | sed 's/\//-/g')
-
             # 最終Push日時を日付形式に変換
             pushed_date=$(date -d "$pushed_at" +%Y-%m-%d)
 
@@ -77,19 +74,16 @@ jobs:
             pushed_sec=$(date -d "$pushed_at" +%s)
             diff_days=$(( (now - pushed_sec) / 86400 ))
 
-            # 経過日数によってステータスとラベルを決定
+            # 経過日数によってステータスを決定
             if [ $diff_days -le 7 ]; then
               # 7日以内: アクティブ
               status="🟢 アクティブ"
-              label="active"
             elif [ $diff_days -le 30 ]; then
               # 8-30日: 最近アクティブ
               status="🟡 最近アクティブ"
-              label="recent"
             else
               # 30日以上: 停滞中
               status="🔴 停滞中"
-              label="stale"
             fi
 
             # Issueの本文を作成
@@ -99,59 +93,18 @@ jobs:
             - ⏰ 最終Push日: **$pushed_date**
             - 🏷️ ステータス: **$status**"
 
-            # 必要なラベルを事前に作成（エラーは無視）
-            echo "ラベル '$repo_label' を確認中..."
-            gh label create "$repo_label" --repo "$GITHUB_REPOSITORY" --color "e1e4e8" --description "リポジトリ: $repo" --force 2>/dev/null || true
-
-            echo "ラベル '$label' を確認中..."
-            case "$label" in
-              "active")
-                gh label create "$label" --repo "$GITHUB_REPOSITORY" --color "28a745" --description "7日以内にアクティブ" --force 2>/dev/null || true
-                ;;
-              "recent")
-                gh label create "$label" --repo "$GITHUB_REPOSITORY" --color "ffc107" --description "8-30日以内にアクティブ" --force 2>/dev/null || true
-                ;;
-              "stale")
-                gh label create "$label" --repo "$GITHUB_REPOSITORY" --color "dc3545" --description "30日以上更新なし" --force 2>/dev/null || true
-                ;;
-            esac
-
-            echo "ラベル 'auto-report' を確認中..."
-            gh label create "auto-report" --repo "$GITHUB_REPOSITORY" --color "0366d6" --description "自動生成レポート" --force 2>/dev/null || true
-
-            # 既存のIssueを検索（タイトルで検索する方が確実）
-            # repo-dashboardリポジトリを明示的に指定
+            # 既存のIssueを検索（タイトルで検索）
             issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "📊 $repo ステータス in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")
 
             # Issue番号が取得できなければ新規作成、あれば更新
             if [ -z "$issue_number" ]; then
               echo "$repo の新しいIssueを作成中..."
-              # Issueを作成（ラベル追加エラーが発生しても続行）
               gh issue create --repo "$GITHUB_REPOSITORY" \
                 --title "📊 $repo ステータス" \
-                --body "$body" 2>/dev/null || \
-              gh issue create --repo "$GITHUB_REPOSITORY" \
-                --title "📊 $repo ステータス" \
-                --body "$body" --label "$label,auto-report" 2>/dev/null || \
-              gh issue create --repo "$GITHUB_REPOSITORY" \
-                --title "📊 $repo ステータス" \
-                --body "$body" --label "auto-report"
-
-              # 作成後にラベルを追加（失敗しても続行）
-              new_issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "📊 $repo ステータス in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")
-              if [ -n "$new_issue" ]; then
-                gh issue edit "$new_issue" --repo "$GITHUB_REPOSITORY" --add-label "$repo_label" 2>/dev/null || true
-                gh issue edit "$new_issue" --repo "$GITHUB_REPOSITORY" --add-label "$label" 2>/dev/null || true
-                gh issue edit "$new_issue" --repo "$GITHUB_REPOSITORY" --add-label "auto-report" 2>/dev/null || true
-              fi
+                --body "$body"
             else
               echo "$repo の既存Issue (#$issue_number) を更新中..."
-              # 既存のステータスラベルを削除して新しいラベルを追加
               gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" \
-                --body "$body" 2>/dev/null || true
-              gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" \
-                --add-label "$label" --remove-label "active,recent,stale" 2>/dev/null || true
-              gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" \
-                --add-label "$repo_label,auto-report" 2>/dev/null || true
+                --body "$body"
             fi
           done

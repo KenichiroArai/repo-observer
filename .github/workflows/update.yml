@@ -99,6 +99,31 @@ jobs:
             - ⏰ 最終Push日: **$pushed_date**
             - 🏷️ ステータス: **$status**"
 
+            # 必要なラベルが存在するか確認し、なければ作成
+            for label_to_check in "$repo_label" "$label" "auto-report"; do
+              if ! gh label list --repo "$GITHUB_REPOSITORY" --json name --jq '.[].name' | grep -q "^${label_to_check}$"; then
+                echo "ラベル '$label_to_check' を作成中..."
+                case "$label_to_check" in
+                  "active")
+                    gh label create "$label_to_check" --repo "$GITHUB_REPOSITORY" --color "28a745" --description "7日以内にアクティブ" 2>/dev/null || true
+                    ;;
+                  "recent")
+                    gh label create "$label_to_check" --repo "$GITHUB_REPOSITORY" --color "ffc107" --description "8-30日以内にアクティブ" 2>/dev/null || true
+                    ;;
+                  "stale")
+                    gh label create "$label_to_check" --repo "$GITHUB_REPOSITORY" --color "dc3545" --description "30日以上更新なし" 2>/dev/null || true
+                    ;;
+                  "auto-report")
+                    gh label create "$label_to_check" --repo "$GITHUB_REPOSITORY" --color "0366d6" --description "自動生成レポート" 2>/dev/null || true
+                    ;;
+                  *)
+                    # リポジトリ名のラベル
+                    gh label create "$label_to_check" --repo "$GITHUB_REPOSITORY" --color "e1e4e8" --description "リポジトリ: $repo" 2>/dev/null || true
+                    ;;
+                esac
+              fi
+            done
+
             # 既存のIssueを検索（リポジトリ名ラベルで検索）
             # repo-dashboardリポジトリを明示的に指定
             issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --label "$repo_label" --json number --jq '.[0].number' 2>/dev/null || echo "")

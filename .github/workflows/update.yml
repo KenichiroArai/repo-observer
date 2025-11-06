@@ -94,13 +94,13 @@ jobs:
             - 🏷️ ステータス: **$status**"
 
             # 既存のIssueを検索（タイトルで検索）
-            issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "📊 $repo ステータス in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")
+            issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$name in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")
 
             # Issue番号が取得できなければ新規作成、あれば更新
             if [ -z "$issue_number" ]; then
               echo "$repo の新しいIssueを作成中..."
               gh issue create --repo "$GITHUB_REPOSITORY" \
-                --title "📊 $repo ステータス" \
+                --title "$name" \
                 --body "$body"
             else
               echo "$repo の既存Issue (#$issue_number) を更新中..."

@@ -66,6 +66,9 @@ jobs:
             open_issues=$(echo "$data" | jq -r .open_issues_count)
             pushed_at=$(echo "$data" | jq -r .pushed_at)
 
+            # ラベル用にリポジトリ名を加工（スラッシュをハイフンに変換）
+            repo_label=$(echo "$repo" | sed 's/\//-/g')
+
             # 最終Push日時を日付形式に変換
             pushed_date=$(date -d "$pushed_at" +%Y-%m-%d)
 
@@ -98,7 +101,7 @@ jobs:
 
             # 既存のIssueを検索（リポジトリ名ラベルで検索）
             # repo-dashboardリポジトリを明示的に指定
-            issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --label "$repo" --json number --jq '.[0].number' 2>/dev/null || echo "")
+            issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --label "$repo_label" --json number --jq '.[0].number' 2>/dev/null || echo "")
 
             # Issue番号が取得できなければ新規作成、あれば更新
             if [ -z "$issue_number" ]; then
@@ -106,7 +109,7 @@ jobs:
               gh issue create --repo "$GITHUB_REPOSITORY" \
                 --title "📊 $repo ステータス" \
                 --body "$body" \
-                --label "$repo,$label,auto-report"
+                --label "$repo_label,$label,auto-report"
             else
               echo "$repo の既存Issue (#$issue_number) を更新中..."
               # 既存のステータスラベルを削除して新しいラベルを追加

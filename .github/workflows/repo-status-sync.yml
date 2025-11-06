@@ -1,14 +1,20 @@
 # リポジトリ状態同期ワークフロー
 # KenichiroAraiの全リポジトリの状態を定期的に取得してIssueとして管理する
-name: Sync Repository Status to Issues
+name: リポジトリ状態をIssueに同期
 
 on:
   schedule:
     - cron: "0 0 * * *" # 毎日午前9時（JST）に実行（UTC 0:00）
   workflow_dispatch: # 手動実行も可能
+    inputs:
+      target_user: # 入力IDは英数字で
+        description: "対象ユーザー名（例: KenichiroArai）"
+        required: true
+        default: "KenichiroArai"
 
 jobs:
-  sync-repo-status:
+  sync-repo-status: # ジョブIDは英数字で
+    name: リポジトリ状態の同期
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -19,18 +25,21 @@ jobs:
         uses: actions/checkout@v4
 
       # ステップ1: KenichiroAraiユーザーの全リポジトリを取得
-      - name: KenichiroAraiの全リポジトリを取得
+      - name: 全リポジトリを取得
         id: repos
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "KenichiroAraiの全リポジトリを取得中..."
+          echo "全リポジトリを取得中..."
+
+          # workflow_dispatch の入力があればそれを使う。なければデフォルトのユーザー名を使う
+          TARGET_USER="${{ github.event.inputs.target_user || 'KenichiroArai' }}"
 
           # gh apiコマンドを使用してリポジトリ一覧を取得（より信頼性が高い）
           # per_page=100で最大100件まで取得
-          response=$(gh api /users/KenichiroArai/repos?per_page=100 --paginate)
+          response=$(gh api /users/"$TARGET_USER"/repos?per_page=100 --paginate)
 
-          # デバッグ: APIレスポンスの最初の部分を表示
+          # デバッグ: APIレスポンスの最初の500文字を表示
           echo "APIレスポンス（最初の500文字）:"
           echo "$response" | head -c 500
           echo ""
@@ -108,4 +117,3 @@ jobs:
                 --body "$body"
             fi
           done
-

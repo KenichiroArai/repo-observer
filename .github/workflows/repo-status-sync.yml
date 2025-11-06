@@ -1,6 +1,6 @@
-# リポジトリIssueダッシュボード更新ワークフロー
-# 各リポジトリの状態を定期的に取得してIssueとして管理する
-name: Update Repository Issues Dashboard
+# リポジトリ状態同期ワークフロー
+# KenichiroAraiの全リポジトリの状態を定期的に取得してIssueとして管理する
+name: Sync Repository Status to Issues
 
 on:
   schedule:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch: # 手動実行も可能
 
 jobs:
-  update:
+  sync-repo-status:
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -42,8 +42,8 @@ jobs:
           echo "repos=$repos" >> $GITHUB_ENV
           echo "取得したリポジトリ: $repos"
 
-      # ステップ2: 各リポジトリのIssueを更新または作成
-      - name: リポジトリのIssueを更新または作成
+      # ステップ2: 各リポジトリの状態をIssueに同期
+      - name: リポジトリ状態をIssueに同期
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -108,3 +108,4 @@ jobs:
                 --body "$body"
             fi
           done
+

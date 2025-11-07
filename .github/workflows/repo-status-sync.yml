@@ -14,7 +14,7 @@ on:
       project_number:
         description: "Project番号（例: 15）未指定の場合はProject連動なし"
         required: false
-        default: ""
+        default: "15"
       project_status_field:
         description: "Projectのステータスフィールド名"
         required: false

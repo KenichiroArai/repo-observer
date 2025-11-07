@@ -155,11 +155,26 @@ jobs:
               projects_status=$([ "$has_projects" = "true" ] && echo "✅" || echo "❌")
 
               # 最新リリース情報を取得（エラーが出ても続行）
-              latest_release=$(gh api /repos/$repo/releases/latest --jq '.tag_name // empty' 2>/dev/null || echo "")
-              if [ -n "$latest_release" ]; then
-                release_date=$(gh api /repos/$repo/releases/latest --jq '.published_at' 2>/dev/null)
-                release_date_formatted=$(date -d "$release_date" +%Y-%m-%d 2>/dev/null || echo "")
-                release_info="**$latest_release** ($release_date_formatted)"
+              release_response=$(gh api /repos/$repo/releases/latest 2>&1 || echo "")
+
+              # レスポンスがエラーメッセージ（JSON形式のエラー）かどうかを確認
+              if echo "$release_response" | grep -q '"message"'; then
+                # エラーの場合
+                release_info="リリースなし"
+              elif [ -n "$release_response" ]; then
+                # 正常なレスポンスの場合
+                latest_release=$(echo "$release_response" | jq -r '.tag_name // empty')
+                if [ -n "$latest_release" ] && [ "$latest_release" != "null" ]; then
+                  release_date=$(echo "$release_response" | jq -r '.published_at')
+                  release_date_formatted=$(date -d "$release_date" +%Y-%m-%d 2>/dev/null || echo "")
+                  if [ -n "$release_date_formatted" ]; then
+                    release_info="**$latest_release** ($release_date_formatted)"
+                  else
+                    release_info="**$latest_release**"
+                  fi
+                else
+                  release_info="リリースなし"
+                fi
               else
                 release_info="リリースなし"
               fi
@@ -172,37 +187,44 @@ jobs:
               fi
 
               # Issueの本文を作成（グループ分けして整理）
-              body="### 📦 リポジトリ: [$repo](https://github.com/$repo)
+              body="## 📦 リポジトリ: [$repo](https://github.com/$repo)
 
-              ## 📝 説明・設定系
-              - 📄 **説明**: $description
-              - 💻 **使用言語**: $language
-              - ⚖️ **ライセンス**: $license
-              - 🏷️ **トピックス**: $topics
-              - 🌐 **ホームページ**: $homepage_display
+              ### 📝 説明・設定系
+              | 項目 | 内容 |
+              |------|------|
+              | 説明 | $description |
+              | 使用言語 | $language |
+              | ライセンス | $license |
+              | トピックス | $topics |
+              | ホームページ | $homepage_display |
 
-              ## 📊 活動指標系
-              - ⭐ **スター数**: $stars
-              - 🍴 **フォーク数**: $forks
-              - 👀 **ウォッチャー数**: $watchers
-              - 🐞 **未解決Issue数**: $open_issues
-              - 💾 **リポジトリサイズ**: $repo_size_display
-              - 🏷️ **ステータス**: $status
+              ### 📊 活動指標系
+              | 項目 | 内容 |
+              |------|------|
+              | スター数 | ⭐ $stars |
+              | フォーク数 | 🍴 $forks |
+              | ウォッチャー数 | 👀 $watchers |
+              | 未解決Issue数 | 🐞 $open_issues |
+              | リポジトリサイズ | 💾 $repo_size_display |
+              | ステータス | $status |
 
-              ## ⏰ 日時系
-              - 🎂 **作成日**: $created_date
-              - 🔄 **最終更新日**: $updated_date
-              - ⏰ **最終Push日**: $pushed_date
-              - 📦 **最新リリース**: $release_info
+              ### ⏰ 日時系
+              | 項目 | 内容 |
+              |------|------|
+              | 作成日 | $created_date |
+              | 最終更新日 | $updated_date |
+              | 最終Push日 | $pushed_date |
+              | 最新リリース | $release_info |
 
-              ## 🔧 状態・設定系
-              - 📦 **アーカイブ状態**: $archive_status
-              - 🔒 **公開状態**: $visibility
-              - 🌿 **デフォルトブランチ**: $default_branch
-              - **機能有効状態**:
-                - Issues: $issues_status
-                - Wiki: $wiki_status
-                - Projects: $projects_status"
+              ### 🔧 状態・設定系
+              | 項目 | 内容 |
+              |------|------|
+              | アーカイブ状態 | $archive_status |
+              | 公開状態 | $visibility |
+              | デフォルトブランチ | $default_branch |
+              | Issues | $issues_status |
+              | Wiki | $wiki_status |
+              | Projects | $projects_status |"
 
               # 既存のIssueを検索（タイトルで検索）
               issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$name in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")

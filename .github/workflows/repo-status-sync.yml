@@ -27,6 +27,7 @@ jobs:
     permissions:
       issues: write
       contents: read
+      repository-projects: write
     steps:
       # ステップ0: リポジトリをチェックアウト（gh CLIを使用するため）
       - name: リポジトリをチェックアウト
@@ -93,9 +94,12 @@ jobs:
           }'
 
           # GraphQL APIを実行
+          set +e  # 一時的にエラーで停止しない
           project_response=$(gh api graphql -f query="$PROJECT_QUERY" -f user="$TARGET_USER" -F number="$PROJECT_NUMBER" 2>&1)
+          exit_code=$?
+          set -e  # エラーで停止する設定を戻す
 
-          if [ $? -ne 0 ]; then
+          if [ $exit_code -ne 0 ]; then
             echo "⚠️ 警告: Project情報の取得に失敗しました"
             echo "$project_response"
             echo "Project連動をスキップします"

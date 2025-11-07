@@ -187,48 +187,46 @@ jobs:
               fi
 
               # Issueの本文を作成（グループ分けして整理）
-              # 先頭のスペースを削除してマークダウンを正しく表示
-              body_raw="## 📦 リポジトリ: [$repo](https://github.com/$repo)
-
-              ### 📝 説明・設定系
-              | 項目 | 内容 |
-              |------|------|
-              | 説明 | $description |
-              | 使用言語 | $language |
-              | ライセンス | $license |
-              | トピックス | $topics |
-              | ホームページ | $homepage_display |
-
-              ### 📊 活動指標系
-              | 項目 | 内容 |
-              |------|------|
-              | スター数 | ⭐ $stars |
-              | フォーク数 | 🍴 $forks |
-              | ウォッチャー数 | 👀 $watchers |
-              | 未解決Issue数 | 🐞 $open_issues |
-              | リポジトリサイズ | 💾 $repo_size_display |
-              | ステータス | $status |
-
-              ### ⏰ 日時系
-              | 項目 | 内容 |
-              |------|------|
-              | 作成日 | $created_date |
-              | 最終更新日 | $updated_date |
-              | 最終Push日 | $pushed_date |
-              | 最新リリース | $release_info |
-
-              ### 🔧 状態・設定系
-              | 項目 | 内容 |
-              |------|------|
-              | アーカイブ状態 | $archive_status |
-              | 公開状態 | $visibility |
-              | デフォルトブランチ | $default_branch |
-              | Issues | $issues_status |
-              | Wiki | $wiki_status |
-              | Projects | $projects_status |"
-
-              # 各行の先頭の14文字分のスペースを削除（YAMLのインデントを除去）
-              body=$(echo "$body_raw" | sed 's/^              //')
+              # printfを使用してタブやインデントの問題を回避
+              body=$(printf '%s\n' \
+                "## 📦 リポジトリ: [$repo](https://github.com/$repo)" \
+                "" \
+                "### 📝 説明・設定系" \
+                "| 項目 | 内容 |" \
+                "|------|------|" \
+                "| 説明 | $description |" \
+                "| 使用言語 | $language |" \
+                "| ライセンス | $license |" \
+                "| トピックス | $topics |" \
+                "| ホームページ | $homepage_display |" \
+                "" \
+                "### 📊 活動指標系" \
+                "| 項目 | 内容 |" \
+                "|------|------|" \
+                "| スター数 | ⭐ $stars |" \
+                "| フォーク数 | 🍴 $forks |" \
+                "| ウォッチャー数 | 👀 $watchers |" \
+                "| 未解決Issue数 | 🐞 $open_issues |" \
+                "| リポジトリサイズ | 💾 $repo_size_display |" \
+                "| ステータス | $status |" \
+                "" \
+                "### ⏰ 日時系" \
+                "| 項目 | 内容 |" \
+                "|------|------|" \
+                "| 作成日 | $created_date |" \
+                "| 最終更新日 | $updated_date |" \
+                "| 最終Push日 | $pushed_date |" \
+                "| 最新リリース | $release_info |" \
+                "" \
+                "### 🔧 状態・設定系" \
+                "| 項目 | 内容 |" \
+                "|------|------|" \
+                "| アーカイブ状態 | $archive_status |" \
+                "| 公開状態 | $visibility |" \
+                "| デフォルトブランチ | $default_branch |" \
+                "| Issues | $issues_status |" \
+                "| Wiki | $wiki_status |" \
+                "| Projects | $projects_status |")
 
               # 既存のIssueを検索（タイトルで検索）
               issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$name in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")

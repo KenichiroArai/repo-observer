@@ -71,11 +71,36 @@ jobs:
 
             # 必要な情報をJSONから抽出
             name=$(echo "$data" | jq -r .name)
+            description=$(echo "$data" | jq -r '.description // "説明なし"')
             stars=$(echo "$data" | jq -r .stargazers_count)
+            forks=$(echo "$data" | jq -r .forks_count)
+            watchers=$(echo "$data" | jq -r .watchers_count)
             open_issues=$(echo "$data" | jq -r .open_issues_count)
+            repo_size=$(echo "$data" | jq -r .size)
+            language=$(echo "$data" | jq -r '.language // "不明"')
+            license=$(echo "$data" | jq -r '.license.name // "ライセンスなし"')
+            topics=$(echo "$data" | jq -r '.topics | join(", ") | if . == "" then "トピックなし" else . end')
+            archived=$(echo "$data" | jq -r .archived)
+            is_private=$(echo "$data" | jq -r .private)
+            default_branch=$(echo "$data" | jq -r .default_branch)
+            has_issues=$(echo "$data" | jq -r .has_issues)
+            has_wiki=$(echo "$data" | jq -r .has_wiki)
+            has_projects=$(echo "$data" | jq -r .has_projects)
+            homepage=$(echo "$data" | jq -r '.homepage // ""')
+            created_at=$(echo "$data" | jq -r .created_at)
+            updated_at=$(echo "$data" | jq -r .updated_at)
             pushed_at=$(echo "$data" | jq -r .pushed_at)
 
-            # 最終Push日時を日付形式に変換
+            # サイズを読みやすい形式に変換（KB → MB）
+            if [ "$repo_size" -ge 1024 ]; then
+              repo_size_display="$(echo "scale=2; $repo_size / 1024" | bc) MB"
+            else
+              repo_size_display="$repo_size KB"
+            fi
+
+            # 日時を日付形式に変換
+            created_date=$(date -d "$created_at" +%Y-%m-%d)
+            updated_date=$(date -d "$updated_at" +%Y-%m-%d)
             pushed_date=$(date -d "$pushed_at" +%Y-%m-%d)
 
             # 最終Push日からの経過日数を計算
@@ -95,12 +120,74 @@ jobs:
               status="🔴 停滞中"
             fi
 
-            # Issueの本文を作成
+            # アーカイブ状態の表示
+            if [ "$archived" = "true" ]; then
+              archive_status="📦 アーカイブ済み"
+            else
+              archive_status="✅ アクティブ"
+            fi
+
+            # 公開状態の表示
+            if [ "$is_private" = "true" ]; then
+              visibility="🔒 プライベート"
+            else
+              visibility="🔓 パブリック"
+            fi
+
+            # 機能の有効状態
+            issues_status=$([ "$has_issues" = "true" ] && echo "✅" || echo "❌")
+            wiki_status=$([ "$has_wiki" = "true" ] && echo "✅" || echo "❌")
+            projects_status=$([ "$has_projects" = "true" ] && echo "✅" || echo "❌")
+
+            # 最新リリース情報を取得（エラーが出ても続行）
+            latest_release=$(gh api /repos/$repo/releases/latest --jq '.tag_name // empty' 2>/dev/null || echo "")
+            if [ -n "$latest_release" ]; then
+              release_date=$(gh api /repos/$repo/releases/latest --jq '.published_at' 2>/dev/null)
+              release_date_formatted=$(date -d "$release_date" +%Y-%m-%d 2>/dev/null || echo "")
+              release_info="**$latest_release** ($release_date_formatted)"
+            else
+              release_info="リリースなし"
+            fi
+
+            # ホームページURLの処理
+            if [ -n "$homepage" ]; then
+              homepage_display="🌐 [$homepage]($homepage)"
+            else
+              homepage_display="ホームページ未設定"
+            fi
+
+            # Issueの本文を作成（グループ分けして整理）
             body="### 📦 リポジトリ: [$repo](https://github.com/$repo)
-            - ⭐ スター数: **$stars**
-            - 🐞 未解決Issue数: **$open_issues**
-            - ⏰ 最終Push日: **$pushed_date**
-            - 🏷️ ステータス: **$status**"
+
+            ## 📝 説明・設定系
+            - 📄 **説明**: $description
+            - 💻 **使用言語**: $language
+            - ⚖️ **ライセンス**: $license
+            - 🏷️ **トピックス**: $topics
+            - 🌐 **ホームページ**: $homepage_display
+
+            ## 📊 活動指標系
+            - ⭐ **スター数**: $stars
+            - 🍴 **フォーク数**: $forks
+            - 👀 **ウォッチャー数**: $watchers
+            - 🐞 **未解決Issue数**: $open_issues
+            - 💾 **リポジトリサイズ**: $repo_size_display
+            - 🏷️ **ステータス**: $status
+
+            ## ⏰ 日時系
+            - 🎂 **作成日**: $created_date
+            - 🔄 **最終更新日**: $updated_date
+            - ⏰ **最終Push日**: $pushed_date
+            - 📦 **最新リリース**: $release_info
+
+            ## 🔧 状態・設定系
+            - 📦 **アーカイブ状態**: $archive_status
+            - 🔒 **公開状態**: $visibility
+            - 🌿 **デフォルトブランチ**: $default_branch
+            - **機能有効状態**:
+              - Issues: $issues_status
+              - Wiki: $wiki_status
+              - Projects: $projects_status"
 
             # 既存のIssueを検索（タイトルで検索）
             issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$name in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")

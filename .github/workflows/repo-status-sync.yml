@@ -132,18 +132,18 @@ jobs:
           echo "ステータスフィールドID: $STATUS_FIELD_ID"
 
           # ステータスオプションIDを取得
-          OPTION_FREQUENT=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🟢 頻繁に更新") | .id')
-          OPTION_REGULAR=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🔵 定期的に更新") | .id')
-          OPTION_OCCASIONAL=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🟡 時々更新") | .id')
-          OPTION_RARE=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🟠 更新が少ない") | .id')
-          OPTION_STALE=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🔴 停滞中") | .id')
+          OPTION_FREQUENT=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "頻繁に更新") | .id')
+          OPTION_REGULAR=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "定期的に更新") | .id')
+          OPTION_OCCASIONAL=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "時々更新") | .id')
+          OPTION_RARE=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "更新が少ない") | .id')
+          OPTION_STALE=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "停滞中") | .id')
 
           echo "ステータスオプション:"
-          echo "  🟢 頻繁に更新: $OPTION_FREQUENT"
-          echo "  🔵 定期的に更新: $OPTION_REGULAR"
-          echo "  🟡 時々更新: $OPTION_OCCASIONAL"
-          echo "  🟠 更新が少ない: $OPTION_RARE"
-          echo "  🔴 停滞中: $OPTION_STALE"
+          echo "  頻繁に更新: $OPTION_FREQUENT"
+          echo "  定期的に更新: $OPTION_REGULAR"
+          echo "  時々更新: $OPTION_OCCASIONAL"
+          echo "  更新が少ない: $OPTION_RARE"
+          echo "  停滞中: $OPTION_STALE"
 
           # 環境変数に保存
           echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
@@ -227,19 +227,19 @@ jobs:
                 # 経過日数によってステータスを決定（5段階）
                 if [ $diff_days -le 7 ]; then
                   # 7日以内: 頻繁に更新
-                  status="🟢 頻繁に更新"
+                  status="頻繁に更新"
                 elif [ $diff_days -le 30 ]; then
                   # 8-30日: 定期的に更新
-                  status="🔵 定期的に更新"
+                  status="定期的に更新"
                 elif [ $diff_days -le 180 ]; then
                   # 31-180日: 時々更新
-                  status="🟡 時々更新"
+                  status="時々更新"
                 elif [ $diff_days -le 365 ]; then
                   # 181-365日: 更新が少ない
-                  status="🟠 更新が少ない"
+                  status="更新が少ない"
                 else
                   # 366日以上: 停滞中
-                  status="🔴 停滞中"
+                  status="停滞中"
                 fi
               else
                 # 日付計算できない場合
@@ -371,15 +371,15 @@ jobs:
                   echo "🔄 Issue #$issue_number をProject #${{ github.event.inputs.project_number }} に追加・更新中..."
 
                   # ステータスに応じたオプションIDを決定（5段階）
-                  if [ "$status" = "🟢 頻繁に更新" ]; then
+                  if [ "$status" = "頻繁に更新" ]; then
                     status_option_id="$OPTION_FREQUENT"
-                  elif [ "$status" = "🔵 定期的に更新" ]; then
+                  elif [ "$status" = "定期的に更新" ]; then
                     status_option_id="$OPTION_REGULAR"
-                  elif [ "$status" = "🟡 時々更新" ]; then
+                  elif [ "$status" = "時々更新" ]; then
                     status_option_id="$OPTION_OCCASIONAL"
-                  elif [ "$status" = "🟠 更新が少ない" ]; then
+                  elif [ "$status" = "更新が少ない" ]; then
                     status_option_id="$OPTION_RARE"
-                  elif [ "$status" = "🔴 停滞中" ]; then
+                  elif [ "$status" = "停滞中" ]; then
                     status_option_id="$OPTION_STALE"
                   else
                     status_option_id=""

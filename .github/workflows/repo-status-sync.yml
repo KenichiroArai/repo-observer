@@ -11,6 +11,14 @@ on:
         description: "対象ユーザー名（例: KenichiroArai）"
         required: true
         default: "KenichiroArai"
+      project_number:
+        description: "Project番号（例: 15）未指定の場合はProject連動なし"
+        required: false
+        default: ""
+      project_status_field:
+        description: "Projectのステータスフィールド名"
+        required: false
+        default: "Status"
 
 jobs:
   sync-repo-status: # ジョブIDは英数字で
@@ -51,7 +59,98 @@ jobs:
           echo "repos=$repos" >> $GITHUB_ENV
           echo "取得したリポジトリ: $repos"
 
-      # ステップ2: 各リポジトリの状態をIssueに同期
+      # ステップ2: Project情報を取得（project_numberが指定されている場合のみ）
+      - name: Project情報を取得
+        if: github.event.inputs.project_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          PROJECT_NUMBER="${{ github.event.inputs.project_number }}"
+          STATUS_FIELD_NAME="${{ github.event.inputs.project_status_field || 'Status' }}"
+          TARGET_USER="${{ github.event.inputs.target_user || 'KenichiroArai' }}"
+
+          echo "Project #$PROJECT_NUMBER の情報を取得中..."
+
+          # GraphQL APIでProject情報を取得
+          PROJECT_QUERY='query($user: String!, $number: Int!) {
+            user(login: $user) {
+              projectV2(number: $number) {
+                id
+                fields(first: 20) {
+                  nodes {
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          # GraphQL APIを実行
+          project_response=$(gh api graphql -f query="$PROJECT_QUERY" -f user="$TARGET_USER" -F number="$PROJECT_NUMBER" 2>&1)
+
+          if [ $? -ne 0 ]; then
+            echo "⚠️ 警告: Project情報の取得に失敗しました"
+            echo "$project_response"
+            echo "Project連動をスキップします"
+            echo "PROJECT_ID=" >> $GITHUB_ENV
+            echo "STATUS_FIELD_ID=" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Project IDを抽出
+          PROJECT_ID=$(echo "$project_response" | jq -r '.data.user.projectV2.id // empty')
+
+          if [ -z "$PROJECT_ID" ]; then
+            echo "⚠️ 警告: Project #$PROJECT_NUMBER が見つかりませんでした"
+            echo "Project連動をスキップします"
+            echo "PROJECT_ID=" >> $GITHUB_ENV
+            echo "STATUS_FIELD_ID=" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Project ID: $PROJECT_ID"
+
+          # ステータスフィールドを検索
+          STATUS_FIELD=$(echo "$project_response" | jq -r --arg name "$STATUS_FIELD_NAME" '.data.user.projectV2.fields.nodes[] | select(.name == $name)')
+
+          if [ -z "$STATUS_FIELD" ] || [ "$STATUS_FIELD" = "null" ]; then
+            echo "⚠️ 警告: ステータスフィールド '$STATUS_FIELD_NAME' が見つかりませんでした"
+            echo "Project連動をスキップします"
+            echo "PROJECT_ID=" >> $GITHUB_ENV
+            echo "STATUS_FIELD_ID=" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          STATUS_FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.id')
+          echo "ステータスフィールドID: $STATUS_FIELD_ID"
+
+          # ステータスオプションIDを取得
+          OPTION_ACTIVE=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🟢 アクティブ") | .id')
+          OPTION_RECENT=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🟡 最近アクティブ") | .id')
+          OPTION_STALE=$(echo "$STATUS_FIELD" | jq -r '.options[] | select(.name == "🔴 停滞中") | .id')
+
+          echo "ステータスオプション:"
+          echo "  🟢 アクティブ: $OPTION_ACTIVE"
+          echo "  🟡 最近アクティブ: $OPTION_RECENT"
+          echo "  🔴 停滞中: $OPTION_STALE"
+
+          # 環境変数に保存
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "STATUS_FIELD_ID=$STATUS_FIELD_ID" >> $GITHUB_ENV
+          echo "OPTION_ACTIVE=$OPTION_ACTIVE" >> $GITHUB_ENV
+          echo "OPTION_RECENT=$OPTION_RECENT" >> $GITHUB_ENV
+          echo "OPTION_STALE=$OPTION_STALE" >> $GITHUB_ENV
+
+          echo "✅ Project情報の取得が完了しました"
+
+      # ステップ3: 各リポジトリの状態をIssueに同期
       - name: リポジトリ状態をIssueに同期
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -234,13 +333,131 @@ jobs:
               # Issue番号が取得できなければ新規作成、あれば更新
               if [ -z "$issue_number" ]; then
                 echo "$repo の新しいIssueを作成中..."
-                gh issue create --repo "$GITHUB_REPOSITORY" \
+                issue_url=$(gh issue create --repo "$GITHUB_REPOSITORY" \
                   --title "$name" \
-                  --body "$body"
+                  --body "$body")
+                # 作成されたIssue番号を抽出
+                issue_number=$(echo "$issue_url" | grep -oP '\d+$')
+                echo "作成されたIssue: #$issue_number"
               else
                 echo "$repo の既存Issue (#$issue_number) を更新中..."
                 gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" \
                   --body "$body"
+              fi
+
+              # Issueの状態を確認（open/closed）
+              issue_state=$(gh issue view "$issue_number" --repo "$GITHUB_REPOSITORY" --json state --jq '.state' 2>/dev/null || echo "")
+
+              echo "Issue #$issue_number の状態: $issue_state"
+
+              # Project連動処理（PROJECT_IDが設定されている場合のみ）
+              if [ -n "$PROJECT_ID" ] && [ -n "$STATUS_FIELD_ID" ]; then
+                # Issueがclosedの場合はステータス更新をスキップ
+                if [ "$issue_state" = "CLOSED" ]; then
+                  echo "⏭️  Issue #$issue_number はclosedのため、Projectステータス更新をスキップします"
+                else
+                  echo "🔄 Issue #$issue_number をProject #${{ github.event.inputs.project_number }} に追加・更新中..."
+
+                  # ステータスに応じたオプションIDを決定
+                  if [ "$status" = "🟢 アクティブ" ]; then
+                    status_option_id="$OPTION_ACTIVE"
+                  elif [ "$status" = "🟡 最近アクティブ" ]; then
+                    status_option_id="$OPTION_RECENT"
+                  elif [ "$status" = "🔴 停滞中" ]; then
+                    status_option_id="$OPTION_STALE"
+                  else
+                    status_option_id=""
+                  fi
+
+                  if [ -z "$status_option_id" ]; then
+                    echo "⚠️ 警告: ステータス '$status' に対応するオプションIDが見つかりません。スキップします。"
+                  else
+                    # IssueのGlobal IDを取得
+                    issue_global_id=$(gh issue view "$issue_number" --repo "$GITHUB_REPOSITORY" --json id --jq '.id' 2>/dev/null || echo "")
+
+                    if [ -z "$issue_global_id" ]; then
+                      echo "⚠️ 警告: Issue #$issue_number のGlobal IDを取得できませんでした"
+                    else
+                      # ProjectにIssueを追加（既に追加済みの場合はitem_idを取得）
+                      add_item_mutation='mutation($projectId: ID!, $contentId: ID!) {
+                        addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                          item {
+                            id
+                          }
+                        }
+                      }'
+
+                      add_response=$(gh api graphql \
+                        --header "Authorization: Bearer ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
+                        -f query="$add_item_mutation" \
+                        -f projectId="$PROJECT_ID" \
+                        -f contentId="$issue_global_id" 2>&1)
+
+                      # レスポンスからitem_idを取得（エラーの場合は既存のitem_idを取得）
+                      item_id=$(echo "$add_response" | jq -r '.data.addProjectV2ItemById.item.id // empty' 2>/dev/null)
+
+                      # 既に追加済みの場合はProjectからitem_idを取得
+                      if [ -z "$item_id" ]; then
+                        echo "既にProjectに追加済み。Item IDを取得中..."
+
+                        get_item_query='query($projectId: ID!) {
+                          node(id: $projectId) {
+                            ... on ProjectV2 {
+                              items(first: 100) {
+                                nodes {
+                                  id
+                                  content {
+                                    ... on Issue {
+                                      id
+                                      number
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }'
+
+                        items_response=$(gh api graphql \
+                          --header "Authorization: Bearer ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
+                          -f query="$get_item_query" \
+                          -f projectId="$PROJECT_ID" 2>&1)
+
+                        item_id=$(echo "$items_response" | jq -r --arg issue_id "$issue_global_id" '.data.node.items.nodes[] | select(.content.id == $issue_id) | .id' 2>/dev/null)
+                      fi
+
+                      if [ -z "$item_id" ]; then
+                        echo "⚠️ 警告: ProjectへのIssue追加に失敗しました"
+                      else
+                        echo "Project Item ID: $item_id"
+
+                        # ステータスフィールドを更新
+                        update_field_mutation='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldValue!) {
+                          updateProjectV2ItemFieldValue(input: {projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: $value}) {
+                            projectV2Item {
+                              id
+                            }
+                          }
+                        }'
+
+                        update_response=$(gh api graphql \
+                          --header "Authorization: Bearer ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
+                          -f query="$update_field_mutation" \
+                          -f projectId="$PROJECT_ID" \
+                          -f itemId="$item_id" \
+                          -f fieldId="$STATUS_FIELD_ID" \
+                          -f value="{\"singleSelectOptionId\":\"$status_option_id\"}" 2>&1)
+
+                        if echo "$update_response" | grep -q '"projectV2Item"'; then
+                          echo "✅ Projectステータスを '$status' に更新しました"
+                        else
+                          echo "⚠️ 警告: Projectステータスの更新に失敗しました"
+                          echo "$update_response"
+                        fi
+                      fi
+                    fi
+                  fi
+                fi
               fi
 
               echo "✅ $repo の処理が完了しました"

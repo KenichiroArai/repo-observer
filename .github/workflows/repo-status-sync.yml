@@ -187,7 +187,8 @@ jobs:
               fi
 
               # Issueの本文を作成（グループ分けして整理）
-              body="## 📦 リポジトリ: [$repo](https://github.com/$repo)
+              # 先頭のスペースを削除してマークダウンを正しく表示
+              body_raw="## 📦 リポジトリ: [$repo](https://github.com/$repo)
 
               ### 📝 説明・設定系
               | 項目 | 内容 |
@@ -225,6 +226,9 @@ jobs:
               | Issues | $issues_status |
               | Wiki | $wiki_status |
               | Projects | $projects_status |"
+
+              # 各行の先頭の14文字分のスペースを削除（YAMLのインデントを除去）
+              body=$(echo "$body_raw" | sed 's/^              //')
 
               # 既存のIssueを検索（タイトルで検索）
               issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "$name in:title" --json number --jq '.[0].number' 2>/dev/null || echo "")

@@ -467,13 +467,20 @@ jobs:
                           }
                         }'
 
+                        # jqを使ってvalue用のJSONオブジェクトを生成
+                        value_json=$(jq -n --arg option "$status_option_id" '{singleSelectOptionId: $option}')
+
+                        # GraphQLリクエスト全体を1つのJSONとして構築
                         update_response=$(gh api graphql \
                           --header "Authorization: Bearer ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
-                          --raw-field query="$update_field_mutation" \
-                          --raw-field projectId="$PROJECT_ID" \
-                          --raw-field itemId="$item_id" \
-                          --raw-field fieldId="$STATUS_FIELD_ID" \
-                          --raw-field value="{\"singleSelectOptionId\":\"$status_option_id\"}" 2>&1)
+                          --method POST \
+                          --input <(jq -n \
+                            --arg query "$update_field_mutation" \
+                            --arg projectId "$PROJECT_ID" \
+                            --arg itemId "$item_id" \
+                            --arg fieldId "$STATUS_FIELD_ID" \
+                            --argjson value "$value_json" \
+                            '{query: $query, variables: {projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: $value}}') 2>&1)
 
                         if echo "$update_response" | grep -q '"projectV2Item"'; then
                           echo "✅ Projectステータスを '$status' に更新しました"

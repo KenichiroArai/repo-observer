@@ -62,13 +62,20 @@ jobs:
 
       # ステップ2: Project情報を取得（project_numberが指定されている場合のみ）
       - name: Project情報を取得
-        if: github.event.inputs.project_number != ''
         env:
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          PROJECT_NUMBER="${{ github.event.inputs.project_number }}"
+          PROJECT_NUMBER="${{ github.event.inputs.project_number || '15' }}"
           STATUS_FIELD_NAME="${{ github.event.inputs.project_status_field || 'Status' }}"
           TARGET_USER="${{ github.event.inputs.target_user || 'KenichiroArai' }}"
+
+          # PROJECT_NUMBERが空の場合はスキップ
+          if [ -z "$PROJECT_NUMBER" ]; then
+            echo "⚠️ Project番号が指定されていないため、Project連動をスキップします"
+            echo "PROJECT_ID=" >> $GITHUB_ENV
+            echo "STATUS_FIELD_ID=" >> $GITHUB_ENV
+            exit 0
+          fi
 
           echo "Project #$PROJECT_NUMBER の情報を取得中..."
 

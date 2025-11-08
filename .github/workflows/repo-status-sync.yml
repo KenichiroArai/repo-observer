@@ -466,7 +466,7 @@ jobs:
                           -f projectId="$PROJECT_ID" \
                           -f itemId="$item_id" \
                           -f fieldId="$STATUS_FIELD_ID" \
-                          -f value="{\"singleSelectOptionId\":\"$status_option_id\"}" 2>&1)
+                          -F value="{\"singleSelectOptionId\":\"$status_option_id\"}" 2>&1)
 
                         if echo "$update_response" | grep -q '"projectV2Item"'; then
                           echo "✅ Projectステータスを '$status' に更新しました"

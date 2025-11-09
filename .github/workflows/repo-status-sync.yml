@@ -228,12 +228,36 @@ jobs:
               updated_date=$(date -d "$updated_at" +%Y-%m-%d 2>/dev/null || echo "不明")
               pushed_date=$(date -d "$pushed_at" +%Y-%m-%d 2>/dev/null || echo "不明")
 
-              # 最終Push日からの経過日数を計算（エラーハンドリング付き）
+              # Issueの最終更新日時を取得（エラーが出ても続行）
+              issues_response=$(gh api /repos/$repo/issues?state=all&sort=updated&direction=desc&per_page=1 2>&1 || echo "")
+
+              latest_issue_updated=""
+              if echo "$issues_response" | jq -e '. | length > 0' >/dev/null 2>&1; then
+                latest_issue_updated=$(echo "$issues_response" | jq -r '.[0].updated_at // empty' 2>/dev/null || echo "")
+              fi
+
+              # 最終Push日とIssue更新日のうち、より新しい方を使用
               now=$(date -u +%s 2>/dev/null || echo "0")
               pushed_sec=$(date -d "$pushed_at" +%s 2>/dev/null || echo "0")
 
-              if [ "$now" != "0" ] && [ "$pushed_sec" != "0" ]; then
-                diff_days=$(( (now - pushed_sec) / 86400 ))
+              # Issue更新日を秒に変換
+              if [ -n "$latest_issue_updated" ]; then
+                issue_sec=$(date -d "$latest_issue_updated" +%s 2>/dev/null || echo "0")
+              else
+                issue_sec="0"
+              fi
+
+              # より新しい日時を使用
+              if [ "$issue_sec" -gt "$pushed_sec" ]; then
+                last_activity_sec="$issue_sec"
+                activity_type="Issue更新"
+              else
+                last_activity_sec="$pushed_sec"
+                activity_type="Push"
+              fi
+
+              if [ "$now" != "0" ] && [ "$last_activity_sec" != "0" ]; then
+                diff_days=$(( (now - last_activity_sec) / 86400 ))
 
                 # 経過日数によってステータスを決定（5段階）
                 if [ $diff_days -le 7 ]; then
@@ -252,6 +276,8 @@ jobs:
                   # 366日以上: 停滞中
                   status="停滞中"
                 fi
+
+                echo "最終活動: $activity_type (${diff_days}日前)"
               else
                 # 日付計算できない場合
                 status="⚠️ 不明"
@@ -308,6 +334,13 @@ jobs:
                 homepage_display="ホームページ未設定"
               fi
 
+              # Issue更新日の表示用フォーマット
+              if [ -n "$latest_issue_updated" ]; then
+                issue_updated_date=$(date -d "$latest_issue_updated" +%Y-%m-%d 2>/dev/null || echo "不明")
+              else
+                issue_updated_date="なし"
+              fi
+
               # Issueの本文を作成（グループ分けして整理）
               # printfを使用してタブやインデントの問題を回避
               body=$(printf '%s\n' \
@@ -330,7 +363,7 @@ jobs:
                 "| ウォッチャー数 | 👀 $watchers |" \
                 "| 未解決Issue数 | 🐞 $open_issues |" \
                 "| リポジトリサイズ | 💾 $repo_size_display |" \
-                "| ステータス | $status |" \
+                "| ステータス | $status ($activity_type による判定) |" \
                 "" \
                 "### ⏰ 日時系" \
                 "| 項目 | 内容 |" \
@@ -338,6 +371,7 @@ jobs:
                 "| 作成日 | $created_date |" \
                 "| 最終更新日 | $updated_date |" \
                 "| 最終Push日 | $pushed_date |" \
+                "| Issue最終更新日 | $issue_updated_date |" \
                 "| 最新リリース | $release_info |" \
                 "" \
                 "### 🔧 状態・設定系" \

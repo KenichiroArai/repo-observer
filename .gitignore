@@ -10,7 +10,10 @@ dist/
 
 # 出力ファイル
 scripts/output/
-*.csv
+scripts/*.csv
+
+# docs/data/配下のCSVファイルは追跡する（例外）
+!docs/data/*.csv
 
 # IDE
 .vscode/

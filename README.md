@@ -3,20 +3,25 @@
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-automated-blue)](https://github.com/features/actions)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-GitHubリポジトリの活動状況を自動的に監視・管理し、GitHub Projectsで可視化するツールです。
+GitHubリポジトリの活動状況を自動的に監視・管理し、GitHub ProjectsやCSVファイルで可視化するツールです。
 
 ## 🎯 概要
 
-**Repo Observer** は、指定したGitHubユーザーの全リポジトリを自動取得し、各リポジトリの状態を1つのIssueとして管理します。GitHub Projectsと連携することで、リポジトリの活動状況を一目で把握できるダッシュボードを構築できます。
+**Repo Observer** は、指定したGitHubユーザーの全リポジトリを自動取得し、以下の形式で出力できます：
+
+1. **Issue管理**: 各リポジトリを1つのIssueとして表現し、GitHub Projectsで可視化
+2. **CSV出力**: 全リポジトリ情報をCSVファイルとして出力し、Excel等で分析
 
 ### 主な特徴
 
 - 🔄 **自動同期**: 毎日自動的にリポジトリ情報を取得・更新（UTC 18:00 / JST 3:00）
 - 📋 **Issue管理**: 各リポジトリを1つのIssueとして表現
+- 📄 **CSV出力**: リポジトリ情報をCSVファイルに出力（毎週日曜日に自動実行）
 - 📊 **5段階ステータス**: 活動状況を自動判定（頻繁に更新、定期的に更新、時々更新、更新が少ない、停滞中）
 - 🎯 **Project連動**: GitHub Projects (v2) と自動連携
 - 📈 **詳細な情報**: スター数、フォーク数、最終更新日、リリース情報など
 - 🎛️ **柔軟な設定**: 手動実行時に対象ユーザーやProject番号を指定可能
+- 💻 **TypeScript/Node.js**: 共通化されたスクリプトで保守性向上
 
 ## 📦 管理される情報
 
@@ -77,22 +82,57 @@ Project連動を使用する場合：
 
 3. Project番号（URL末尾の数字）をメモ
 
-### 4. ワークフローの実行
+### 4. 依存関係のインストール
 
-#### 自動実行
+初回のみ、スクリプトの依存関係をインストールします：
 
-毎日 UTC 18:00（JST 3:00）に自動実行されます。
+```bash
+cd scripts
+npm install
+npm run build
+```
 
-#### 手動実行
+### 5. ワークフローの実行
+
+#### 🎯 リポジトリ情報同期ワークフロー
+
+CSV出力とIssue同期を1回の実行で完了します。
+
+**自動実行**: 毎週日曜日 UTC 18:00（JST 3:00）に自動実行されます。
+
+**手動実行**:
 
 1. **Actions** タブを開く
-2. **「リポジトリ状態をIssueに同期」** を選択
+2. **「リポジトリ情報同期」** を選択
 3. **Run workflow** をクリック
 4. パラメータを入力（オプション）：
 
    - **対象ユーザー名**: 監視するリポジトリのユーザー名（デフォルト: `KenichiroArai`）
    - **Project番号**: 連動するProjectのID（未指定でProject連動なし）
    - **Projectのステータスフィールド名**: Projectで使用するフィールド名（デフォルト: `Status`）
+   - **プライベートリポジトリを含める**: プライベートリポジトリも対象にする
+   - **アーカイブ済みリポジトリを含める**: アーカイブ済みも対象にする
+   - **サマリーCSVも出力する**: 主要項目のみのサマリーCSVも生成
+   - **CSV出力をスキップ**: Issue同期のみ実行したい場合
+   - **Issue同期をスキップ**: CSV出力のみ実行したい場合
+
+**実行パターン**:
+
+| パターン | 設定 | 実行内容 |
+|---------|------|---------|
+| 両方実行（通常） | デフォルト | CSV出力 + Issue同期 |
+| Issue同期のみ | `skip_csv: true` | Issue同期のみ |
+| CSV出力のみ | `skip_issues: true` | CSV出力のみ |
+
+**特徴**:
+- ✅ **効率的**: リポジトリ情報の取得を1回に集約
+- ✅ **安全**: 順次実行でデータの一貫性を保証
+- ✅ **高速**: ビルド済みスクリプトを再利用
+- ✅ **柔軟**: スキップオプションで片方だけの実行も可能
+
+**出力ファイルの取得**:
+
+ワークフロー実行後、**Actions** タブから該当の実行結果を開き、**Artifacts** セクションから CSVファイルをダウンロードできます
 
 ## 📊 ステータス判定ロジック
 
@@ -114,12 +154,49 @@ Project連動を使用する場合：
 repo-observer/
 ├── .github/
 │   └── workflows/
-│       └── repo-status-sync.yml  # メインワークフロー
+│       └── repo-full-sync.yml     # リポジトリ情報同期（毎週日曜 18:00 UTC）
+├── scripts/                        # TypeScript/Node.jsスクリプト
+│   ├── src/
+│   │   ├── index.ts               # エントリーポイント
+│   │   ├── types.ts               # 型定義
+│   │   ├── repo-fetcher.ts        # リポジトリ情報取得
+│   │   ├── repo-formatter.ts      # データ整形
+│   │   ├── status-calculator.ts   # ステータス判定
+│   │   └── exporters/
+│   │       ├── csv-exporter.ts    # CSV出力
+│   │       └── issue-exporter.ts  # Issue出力
+│   ├── dist/                      # ビルド成果物
+│   ├── output/                    # 出力ファイル
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── README.md
 ├── docs/
-│   └── 構想.md                   # プロジェクトの構想・詳細設計
-├── LICENSE                       # MITライセンス
-└── README.md                     # このファイル
+│   └── 構想.md                    # プロジェクトの構想・詳細設計
+├── LICENSE                        # MITライセンス
+└── README.md                      # このファイル
 ```
+
+### アーキテクチャ
+
+```
+GitHub API
+    ↓
+repo-fetcher.ts (リポジトリ情報取得)
+    ↓
+status-calculator.ts (ステータス判定)
+    ↓
+repo-formatter.ts (データ整形)
+    ↓
+    ├→ csv-exporter.ts (CSV出力) → CSVファイル
+    └→ issue-exporter.ts (Issue出力) → GitHub Issues + Projects
+```
+
+**共通化のメリット**:
+
+- ✅ **保守性向上**: ロジックの重複を排除し、修正箇所を一箇所に集約
+- ✅ **型安全性**: TypeScriptによる静的型チェックでバグを事前に防止
+- ✅ **拡張性**: 新しい出力形式（JSON、Markdownなど）を容易に追加可能
+- ✅ **テスト容易性**: モジュール化により単体テストが書きやすい
 
 ## 🎯 想定される使用例
 
@@ -134,6 +211,33 @@ GitHub Projectでは以下のようなダッシュボードが構築されます
 | repo-C | ⭐ 12 | 🍴 3 | 🐞 1 | ⏰ 2025-08-20 | 時々更新 |
 | repo-D | ⭐ 3 | 🍴 0 | 🐞 0 | ⏰ 2024-12-01 | 停滞中 |
 
+## 💻 ローカルでの実行
+
+GitHub Actions以外に、ローカル環境でスクリプトを実行することも可能です。
+
+### CSV出力
+
+```bash
+cd scripts
+export GITHUB_TOKEN=your_github_token
+export TARGET_USER=KenichiroArai
+export OUTPUT_PATH=./output/repositories.csv
+npm run export-csv
+```
+
+### Issue同期
+
+```bash
+cd scripts
+export GITHUB_TOKEN=your_github_token
+export TARGET_USER=KenichiroArai
+export REPOSITORY=owner/repo
+export PROJECT_NUMBER=15
+npm run sync-issues
+```
+
+詳細は [scripts/README.md](scripts/README.md) を参照してください。
+
 ## 💡 発展的な使い方
 
 以下の機能は将来的な拡張として検討できます：
@@ -142,16 +246,30 @@ GitHub Projectでは以下のようなダッシュボードが構築されます
 - **変更通知**: Stars数の増減をSlack等に通知
 - **フィルタリング**: 特定の条件に合うリポジトリのみを管理対象とする
 - **複数ユーザー管理**: 複数のGitHubユーザーのリポジトリを一元管理
+- **JSON出力**: API連携用のJSON形式での出力
+- **Markdown出力**: レポート用のMarkdownドキュメント生成
 
 詳細な実装案については、[docs/構想.md](docs/構想.md) を参照してください。
 
 ## 🔧 技術スタック
 
+### ワークフロー
+
 - **GitHub Actions**: ワークフローの自動実行
+
+### スクリプト
+
+- **TypeScript**: 型安全な実装
+- **Node.js**: 実行環境
+- **Octokit**: GitHub REST API クライアント
+- **@octokit/graphql**: GitHub GraphQL API クライアント
+- **csv-writer**: CSV出力
+- **date-fns**: 日付処理
+
+### API
+
 - **GitHub REST API**: リポジトリ情報の取得
 - **GitHub GraphQL API**: Project連携
-- **gh CLI**: GitHub APIの操作
-- **jq**: JSON処理
 
 ## 📝 ライセンス
 

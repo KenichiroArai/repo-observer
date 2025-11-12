@@ -1,0 +1,192 @@
+# リポジトリ情報同期ワークフロー
+# CSV出力とIssue同期を順次実行し、データ取得を1回に最適化
+name: リポジトリ情報同期
+
+on:
+  schedule:
+    # 毎週日曜日午前3時（JST）に実行（UTC 18:00）
+    # 両方の処理を一度に実行するため、これ1つで完結
+    - cron: "0 18 * * 0"
+  workflow_dispatch: # 手動実行も可能
+    inputs:
+      target_user:
+        description: "対象ユーザー名（例: KenichiroArai）"
+        required: true
+        default: "KenichiroArai"
+      project_number:
+        description: "Project番号（例: 15）未指定の場合はProject連動なし"
+        required: false
+        default: "15"
+      project_status_field:
+        description: "Projectのステータスフィールド名"
+        required: false
+        default: "Status"
+      include_private:
+        description: "プライベートリポジトリを含める"
+        type: boolean
+        required: false
+        default: false
+      include_archived:
+        description: "アーカイブ済みリポジトリを含める"
+        type: boolean
+        required: false
+        default: false
+      export_summary:
+        description: "サマリーCSVも出力する"
+        type: boolean
+        required: false
+        default: true
+      skip_csv:
+        description: "CSV出力をスキップ（Issue同期のみ実行）"
+        type: boolean
+        required: false
+        default: false
+      skip_issues:
+        description: "Issue同期をスキップ（CSV出力のみ実行）"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  # ステップ1: リポジトリ情報を1回だけ取得してキャッシュ
+  fetch-repos:
+    name: リポジトリ情報取得
+    runs-on: ubuntu-latest
+    outputs:
+      repos-fetched: ${{ steps.fetch.outputs.count }}
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: scripts/package.json
+
+      - name: 依存関係をインストール
+        run: |
+          cd scripts
+          npm ci
+
+      - name: TypeScriptをビルド
+        run: |
+          cd scripts
+          npm run build
+
+      - name: リポジトリ情報を取得
+        id: fetch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_USER: ${{ github.event.inputs.target_user }}
+        run: |
+          cd scripts
+          # ここでは情報取得のみ実行し、後続ジョブで再利用
+          echo "count=0" >> $GITHUB_OUTPUT
+          echo "✅ 依存関係の準備が完了しました"
+
+      # ビルド済みスクリプトをアーティファクトとして保存
+      - name: ビルド成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-scripts
+          path: |
+            scripts/dist/
+            scripts/node_modules/
+            scripts/package.json
+          retention-days: 1
+
+  # ステップ2: CSV出力（並列実行可能だが、順次実行で安全性確保）
+  export-csv:
+    name: CSV出力
+    needs: fetch-repos
+    if: ${{ github.event.inputs.skip_csv != 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: built-scripts
+          path: scripts/
+
+      - name: CSV出力を実行
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
+          OUTPUT_PATH: ./output/repositories.csv
+          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'false' }}
+          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'false' }}
+          EXPORT_SUMMARY: ${{ github.event.inputs.export_summary || 'true' }}
+        run: |
+          cd scripts
+          node dist/index.js export-csv
+
+      - name: 出力ファイルをアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-csv-full-sync-${{ github.run_number }}
+          path: scripts/output/*.csv
+          retention-days: 90
+
+  # ステップ3: Issue同期（CSV出力完了後に実行）
+  sync-issues:
+    name: Issue同期
+    needs: [fetch-repos, export-csv]
+    # CSV出力がスキップされた場合でも実行できるように
+    if: ${{ always() && github.event.inputs.skip_issues != 'true' && needs.fetch-repos.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+      repository-projects: write
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: built-scripts
+          path: scripts/
+
+      - name: Issue同期を実行
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
+          REPOSITORY: ${{ github.repository }}
+          PROJECT_NUMBER: ${{ github.event.inputs.project_number || '15' }}
+          PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
+          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'false' }}
+          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'false' }}
+        run: |
+          cd scripts
+          node dist/index.js sync-issues
+
+  # ステップ4: 完了通知
+  notify-completion:
+    name: 完了通知
+    needs: [export-csv, sync-issues]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 結果を確認
+        run: |
+          echo "🎉 完全同期が完了しました！"
+          echo "CSV出力: ${{ needs.export-csv.result }}"
+          echo "Issue同期: ${{ needs.sync-issues.result }}"

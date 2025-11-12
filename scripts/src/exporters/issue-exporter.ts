@@ -14,7 +14,7 @@ interface ProjectInfo {
 
 export class IssueExporter {
   private octokit: Octokit;
-  private graphqlClient: ReturnType<typeof graphql>;
+  private graphqlClient: typeof graphql;
   private config: IssueExportConfig;
 
   constructor(token: string, config: IssueExportConfig) {

@@ -1,6 +1,7 @@
 {
   "name": "repo-observer-scripts",
   "version": "1.0.0",
+  "type": "module",
   "description": "GitHub repository observer scripts",
   "main": "dist/index.js",
   "scripts": {

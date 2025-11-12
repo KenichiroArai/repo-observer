@@ -16,6 +16,7 @@ export class IssueExporter {
   private octokit: Octokit;
   private graphqlClient: typeof graphql;
   private config: IssueExportConfig;
+  private issueCache: Map<string, { number: number; state: string }> | null = null;
 
   constructor(token: string, config: IssueExportConfig) {
     this.octokit = new Octokit({ auth: token });
@@ -25,6 +26,116 @@ export class IssueExporter {
       }
     });
     this.config = config;
+  }
+
+  /**
+   * 指定時間待機
+   */
+  private async sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * リトライ付きAPI呼び出し
+   */
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 5,
+    initialDelayMs: number = 60000
+  ): Promise<T> {
+    let lastError: any;
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        lastError = error;
+
+        // セカンダリレート制限エラーの場合
+        if (error.status === 403 && error.message?.includes('secondary rate limit')) {
+          const delayMs = initialDelayMs * Math.pow(2, i);
+          const delayMinutes = (delayMs / 60000).toFixed(1);
+          console.warn(`⚠️ セカンダリレート制限に達しました。${delayMinutes}分（${delayMs}ms）待機してリトライします... (${i + 1}/${maxRetries + 1})`);
+          console.warn(`  リクエストID: ${error.request?.url || 'N/A'}`);
+          await this.sleep(delayMs);
+          continue;
+        }
+
+        // プライマリレート制限の場合
+        if (error.status === 403 && error.response?.headers?.['x-ratelimit-remaining'] === '0') {
+          const resetTime = error.response.headers['x-ratelimit-reset'];
+          if (resetTime) {
+            const waitMs = (parseInt(resetTime) * 1000) - Date.now() + 5000; // +5秒の余裕
+            if (waitMs > 0 && i < maxRetries) {
+              const waitMinutes = (waitMs / 60000).toFixed(1);
+              console.warn(`⚠️ プライマリレート制限に達しました。${waitMinutes}分待機してリトライします...`);
+              await this.sleep(waitMs);
+              continue;
+            }
+          }
+        }
+
+        // 最終リトライでない場合は短い待機を入れる
+        if (i < maxRetries) {
+          console.warn(`⚠️ APIエラーが発生しました。10秒待機してリトライします... (${i + 1}/${maxRetries + 1})`);
+          await this.sleep(10000);
+          continue;
+        }
+
+        // 最終リトライ後はエラーをそのまま投げる
+        throw error;
+      }
+    }
+    throw lastError;
+  }
+
+  /**
+   * 既存の全Issueをキャッシュ
+   */
+  private async cacheExistingIssues(owner: string, repo: string): Promise<void> {
+    console.log('既存Issueをキャッシュ中...');
+    this.issueCache = new Map();
+
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      try {
+        const response = await this.retryWithBackoff(() =>
+          this.octokit.issues.listForRepo({
+            owner,
+            repo,
+            state: 'all',
+            per_page: perPage,
+            page: page
+          })
+        );
+
+        for (const issue of response.data) {
+          // Pull Requestは除外
+          if (!issue.pull_request) {
+            this.issueCache.set(issue.title, {
+              number: issue.number,
+              state: issue.state
+            });
+          }
+        }
+
+        if (response.data.length < perPage) {
+          break;
+        }
+
+        page++;
+
+        // ページ間で待機してレート制限を回避
+        await this.sleep(2000);
+      } catch (error) {
+        console.error(`❌ Issueリスト取得エラー (page ${page}):`, error);
+        // エラーが発生した場合も継続してキャッシュを構築
+        break;
+      }
+    }
+
+    console.log(`✅ ${this.issueCache.size} 個のIssueをキャッシュしました`);
   }
 
   /**
@@ -44,6 +155,11 @@ export class IssueExporter {
       filteredRepos = filteredRepos.filter(r => !r.archived);
     }
 
+    const [owner, repo] = this.config.repository.split('/');
+
+    // 既存Issueをキャッシュ（レート制限回避のため）
+    await this.cacheExistingIssues(owner, repo);
+
     // Project情報を取得（設定されている場合）
     let projectInfo: ProjectInfo | undefined;
     if (this.config.projectNumber) {
@@ -55,14 +171,39 @@ export class IssueExporter {
       }
     }
 
-    const [owner, repo] = this.config.repository.split('/');
-
     // 各リポジトリを処理
+    let processedCount = 0;
+    let errorCount = 0;
+    console.log(`処理対象: ${filteredRepos.length} リポジトリ`);
+
     for (const repoInfo of filteredRepos) {
       try {
         await this.syncRepositoryToIssue(owner, repo, repoInfo, projectInfo);
-      } catch (error) {
-        console.error(`❌ ${repoInfo.fullName} の処理中にエラーが発生:`, error);
+        processedCount++;
+        console.log(`進捗: ${processedCount}/${filteredRepos.length} (エラー: ${errorCount})`);
+
+        // 各リポジトリ処理の間に待機してレート制限を回避
+        if (processedCount < filteredRepos.length) {
+          await this.sleep(3000); // 3秒待機
+        }
+      } catch (error: any) {
+        errorCount++;
+        console.error(`❌ ${repoInfo.fullName} の処理中にエラーが発生:`);
+        if (error.status) {
+          console.error(`  ステータスコード: ${error.status}`);
+        }
+        if (error.message) {
+          console.error(`  メッセージ: ${error.message}`);
+        }
+
+        // セカンダリレート制限エラーの場合は処理を停止
+        if (error.status === 403 && error.message?.includes('secondary rate limit')) {
+          console.error(`⚠️ セカンダリレート制限に達したため、処理を一時停止します。`);
+          console.error(`  これまでの処理: ${processedCount}/${filteredRepos.length} 完了`);
+          // 5分待機してから処理を再開
+          console.log(`⏰ 5分間待機してから処理を再開します...`);
+          await this.sleep(300000);
+        }
       }
     }
 
@@ -91,23 +232,35 @@ export class IssueExporter {
     if (existingIssue) {
       // 既存Issueを更新
       console.log(`  既存Issue #${existingIssue.number} を更新`);
-      await this.octokit.issues.update({
-        owner,
-        repo,
-        issue_number: existingIssue.number,
-        body
-      });
+      await this.retryWithBackoff(() =>
+        this.octokit.issues.update({
+          owner,
+          repo,
+          issue_number: existingIssue.number,
+          body
+        })
+      );
       issueNumber = existingIssue.number;
     } else {
       // 新規Issue作成
       console.log(`  新規Issueを作成`);
-      const created = await this.octokit.issues.create({
-        owner,
-        repo,
-        title: repoInfo.name,
-        body
-      });
+      const created = await this.retryWithBackoff(() =>
+        this.octokit.issues.create({
+          owner,
+          repo,
+          title: repoInfo.name,
+          body
+        })
+      );
       issueNumber = created.data.number;
+
+      // キャッシュに追加
+      if (this.issueCache) {
+        this.issueCache.set(repoInfo.name, {
+          number: issueNumber,
+          state: 'open'
+        });
+      }
     }
 
     // Projectに追加・更新（設定されている場合）
@@ -173,27 +326,16 @@ export class IssueExporter {
   }
 
   /**
-   * 既存Issueを検索
+   * 既存Issueを検索（キャッシュを使用）
    */
   private async findExistingIssue(
     owner: string,
     repo: string,
     title: string
   ): Promise<{ number: number; state: string } | null> {
-    try {
-      const response = await this.octokit.search.issuesAndPullRequests({
-        q: `repo:${owner}/${repo} is:issue in:title "${title}"`
-      });
-
-      if (response.data.items.length > 0) {
-        const issue = response.data.items[0];
-        return {
-          number: issue.number,
-          state: issue.state
-        };
-      }
-    } catch (error) {
-      console.error('Issue検索エラー:', error);
+    // キャッシュから検索
+    if (this.issueCache && this.issueCache.has(title)) {
+      return this.issueCache.get(title)!;
     }
     return null;
   }
@@ -227,10 +369,12 @@ export class IssueExporter {
       }
     `;
 
-    const result: any = await this.graphqlClient(query, {
-      user: owner,
-      number: this.config.projectNumber!
-    });
+    const result: any = await this.retryWithBackoff(() =>
+      this.graphqlClient(query, {
+        user: owner,
+        number: this.config.projectNumber!
+      })
+    );
 
     const project = result.user.projectV2;
     const statusField = project.fields.nodes.find(
@@ -282,11 +426,13 @@ export class IssueExporter {
     projectInfo: ProjectInfo
   ): Promise<void> {
     // IssueのGlobal IDを取得
-    const issueData = await this.octokit.issues.get({
-      owner,
-      repo,
-      issue_number: issueNumber
-    });
+    const issueData = await this.retryWithBackoff(() =>
+      this.octokit.issues.get({
+        owner,
+        repo,
+        issue_number: issueNumber
+      })
+    );
     const issueGlobalId = (issueData.data as any).node_id;
 
     // Projectにアイテムを追加
@@ -302,10 +448,12 @@ export class IssueExporter {
 
     let itemId: string;
     try {
-      const addResult: any = await this.graphqlClient(addMutation, {
-        projectId: projectInfo.projectId,
-        contentId: issueGlobalId
-      });
+      const addResult: any = await this.retryWithBackoff(() =>
+        this.graphqlClient(addMutation, {
+          projectId: projectInfo.projectId,
+          contentId: issueGlobalId
+        })
+      );
       itemId = addResult.addProjectV2ItemById.item.id;
     } catch {
       // 既に追加済みの場合はitem_idを取得
@@ -334,14 +482,16 @@ export class IssueExporter {
       }
     `;
 
-    await this.graphqlClient(updateMutation, {
-      projectId: projectInfo.projectId,
-      itemId: itemId,
-      fieldId: projectInfo.statusFieldId,
-      value: {
-        singleSelectOptionId: statusOptionId
-      }
-    });
+    await this.retryWithBackoff(() =>
+      this.graphqlClient(updateMutation, {
+        projectId: projectInfo.projectId,
+        itemId: itemId,
+        fieldId: projectInfo.statusFieldId,
+        value: {
+          singleSelectOptionId: statusOptionId
+        }
+      })
+    );
   }
 
   /**
@@ -367,7 +517,9 @@ export class IssueExporter {
       }
     `;
 
-    const result: any = await this.graphqlClient(query, { projectId });
+    const result: any = await this.retryWithBackoff(() =>
+      this.graphqlClient(query, { projectId })
+    );
     const item = result.node.items.nodes.find(
       (node: any) => node.content?.id === issueGlobalId
     );

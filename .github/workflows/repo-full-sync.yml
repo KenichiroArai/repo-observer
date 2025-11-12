@@ -159,11 +159,15 @@ jobs:
           name: built-scripts
           path: scripts/
 
+      - name: CSV出力ディレクトリを作成
+        run: |
+          mkdir -p docs/data
+
       - name: CSV出力を実行
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
-          OUTPUT_PATH: ./output/repositories.csv
+          OUTPUT_PATH: ../docs/data/repositories.csv
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
           EXPORT_SUMMARY: ${{ github.event.inputs.export_summary || 'true' }}
@@ -171,11 +175,30 @@ jobs:
           cd scripts
           node dist/index.js export-csv
 
+      - name: CSVファイルをリポジトリにコミット
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/data/*.csv
+
+          # 変更があればコミット
+          if git diff --staged --quiet; then
+            echo "変更がありません。コミットをスキップします。"
+          else
+            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            git commit -m "chore: リポジトリ情報CSVを更新 (${TIMESTAMP})" \
+                       -m "ワークフロー実行: ${{ github.run_number }}" \
+                       -m "実行者: ${{ github.triggering_actor }}" \
+                       -m "トリガー: ${{ github.event_name }}"
+            git push
+            echo "✅ CSVファイルをコミットしました"
+          fi
+
       - name: 出力ファイルをアップロード
         uses: actions/upload-artifact@v4
         with:
           name: repository-csv-full-sync-${{ github.run_number }}-${{ needs.fetch-repos.outputs.workflow-version }}
-          path: scripts/output/*.csv
+          path: docs/data/*.csv
           retention-days: 90
 
   # ステップ3: Issue同期（CSV出力完了後に実行）

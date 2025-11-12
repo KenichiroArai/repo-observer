@@ -25,12 +25,12 @@ on:
         description: "プライベートリポジトリを含める"
         type: boolean
         required: false
-        default: false
+        default: true
       include_archived:
         description: "アーカイブ済みリポジトリを含める"
         type: boolean
         required: false
-        default: false
+        default: true
       export_summary:
         description: "サマリーCSVも出力する"
         type: boolean
@@ -125,8 +125,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
           OUTPUT_PATH: ./output/repositories.csv
-          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'false' }}
-          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'false' }}
+          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
+          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
           EXPORT_SUMMARY: ${{ github.event.inputs.export_summary || 'true' }}
         run: |
           cd scripts
@@ -172,8 +172,8 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           PROJECT_NUMBER: ${{ github.event.inputs.project_number || '15' }}
           PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
-          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'false' }}
-          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'false' }}
+          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
+          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
         run: |
           cd scripts
           node dist/index.js sync-issues

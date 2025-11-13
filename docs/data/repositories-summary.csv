@@ -1,12 +1,12 @@
 リポジトリ名,ステータス,スター数,フォーク数,未解決Issue,言語,最終Push,URL
-repo-observer,頻繁に更新,0,0,47,TypeScript,2025-11-12,https://github.com/KenichiroArai/repo-observer
-simple-repo-observer,頻繁に更新,0,0,0,不明,2025-11-12,https://github.com/KenichiroArai/simple-repo-observer
+Blog,頻繁に更新,0,0,1,HTML,2025-11-13,https://github.com/KenichiroArai/Blog
+repo-observer,頻繁に更新,0,0,0,TypeScript,2025-11-12,https://github.com/KenichiroArai/repo-observer
+simple-repo-observer,頻繁に更新,0,0,58,不明,2025-11-12,https://github.com/KenichiroArai/simple-repo-observer
 daily-tasks-git,頻繁に更新,0,0,1,不明,2025-11-12,https://github.com/KenichiroArai/daily-tasks-git
-Blog,頻繁に更新,0,0,1,HTML,2025-11-12,https://github.com/KenichiroArai/Blog
 sample-github-actions,頻繁に更新,0,0,0,Python,2025-11-11,https://github.com/KenichiroArai/sample-github-actions
 everyday-use-git,頻繁に更新,0,0,33,不明,2025-08-05,https://github.com/KenichiroArai/everyday-use-git
 sandbox,頻繁に更新,0,0,1,不明,2025-11-07,https://github.com/KenichiroArai/sandbox
-kmg-tool-gui,頻繁に更新,0,0,1,Java,2025-11-04,https://github.com/KenichiroArai/kmg-tool-gui
+kmg-tool-gui,定期的に更新,0,0,1,Java,2025-11-04,https://github.com/KenichiroArai/kmg-tool-gui
 kmg-tool-cli,定期的に更新,0,0,0,Java,2025-11-02,https://github.com/KenichiroArai/kmg-tool-cli
 kmg-tool-base,定期的に更新,0,0,12,Java,2025-11-01,https://github.com/KenichiroArai/kmg-tool-base
 kmg-javafx,定期的に更新,0,0,1,Java,2025-10-28,https://github.com/KenichiroArai/kmg-javafx

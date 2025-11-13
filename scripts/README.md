@@ -1,14 +1,17 @@
-# Repo Observer Scripts
+# Repo Observer Scripts - 技術仕様
+
+> このドキュメントは、Repo Observerのスクリプトの技術仕様とローカル実行方法を説明します。
+> プロジェクトの概要については [README.md](../README.md) を参照してください。
 
 GitHubリポジトリ情報を取得・整形・出力するTypeScript/Node.jsスクリプトです。
 
 ## 🎯 機能
 
-- **リポジトリ情報取得**: GitHub APIを使用して対象ユーザーの全リポジトリ情報を取得
+- **リポジトリ情報取得**: GitHub REST APIを使用して対象ユーザーの全リポジトリ情報を取得
 - **ステータス判定**: 最終更新日から活動状況を5段階で自動判定
 - **CSV出力**: 取得した情報をCSVファイルに出力
 - **Issue同期**: リポジトリ情報をGitHub Issueとして同期
-- **Project連動**: GitHub Projects (v2) と自動連携
+- **Project連動**: GitHub Projects (v2) と自動連携（GraphQL API使用）
 
 ## 📦 セットアップ
 
@@ -85,19 +88,34 @@ node dist/index.js sync-issues
 ```text
 scripts/
 ├── src/
-│   ├── index.ts              # エントリーポイント
-│   ├── types.ts              # 型定義
-│   ├── repo-fetcher.ts       # リポジトリ情報取得
-│   ├── repo-formatter.ts     # データ整形
-│   ├── status-calculator.ts  # ステータス判定
+│   ├── index.ts               # エントリーポイント（コマンド処理）
+│   ├── types.ts               # 型定義
+│   ├── repo-fetcher.ts        # リポジトリ情報取得（GitHub REST API）
+│   ├── repo-formatter.ts      # データ整形（Issue本文、CSV行）
+│   ├── status-calculator.ts   # ステータス判定（5段階）
 │   └── exporters/
-│       ├── csv-exporter.ts   # CSV出力
-│       └── issue-exporter.ts # Issue出力
-├── dist/                     # ビルド成果物
-├── output/                   # 出力ファイル
-├── package.json
-├── tsconfig.json
-└── README.md
+│       ├── csv-exporter.ts    # CSV出力（csv-writer使用）
+│       └── issue-exporter.ts  # Issue出力（Octokit + GraphQL API）
+├── dist/                      # TypeScriptビルド成果物
+├── output/                    # ローカル実行時の出力ファイル
+├── package.json               # 依存関係定義
+├── tsconfig.json              # TypeScript設定
+└── README.md                  # このファイル
+```
+
+### アーキテクチャ
+
+```text
+index.ts (コマンドライン引数処理)
+    ↓
+repo-fetcher.ts (GitHub API → リポジトリデータ取得)
+    ↓
+status-calculator.ts (最終更新日 → 5段階ステータス)
+    ↓
+repo-formatter.ts (データ整形)
+    ↓
+    ├→ csv-exporter.ts (CSVファイル出力)
+    └→ issue-exporter.ts (Issue作成/更新 + Project連動)
 ```
 
 ## ⚠️ レート制限への対応
@@ -186,11 +204,38 @@ curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/rate_limit
 npm run build
 ```
 
+ビルド成果物は `dist/` ディレクトリに生成されます。
+
 ### 型チェック
 
 ```bash
 npx tsc --noEmit
 ```
+
+### コマンド一覧
+
+| コマンド | 説明 |
+|---------|------|
+| `npm run build` | TypeScriptをビルド |
+| `npm run export-csv` | CSV出力を実行 |
+| `npm run sync-issues` | Issue同期を実行 |
+
+### 技術スタック
+
+| カテゴリ | ライブラリ | 用途 |
+|---------|-----------|------|
+| **言語** | TypeScript | 型安全な実装 |
+| **実行環境** | Node.js (v20) | スクリプト実行 |
+| **API クライアント** | @octokit/rest | GitHub REST API |
+| **GraphQL** | @octokit/graphql | GitHub GraphQL API (Project連動) |
+| **CSV出力** | csv-writer | CSVファイル生成 |
+| **日付処理** | date-fns | 日時計算・フォーマット |
+
+## 📚 関連ドキュメント
+
+- **[README.md](../README.md)** - プロジェクトの概要と基本的な使い方
+- **[docs/ワークフロー同期制御.md](../docs/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
+- **[docs/構想.md](../docs/構想.md)** - プロジェクトの構想と背景
 
 ## 📝 ライセンス
 

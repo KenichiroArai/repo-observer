@@ -9,39 +9,28 @@ GitHubリポジトリの活動状況を自動的に監視・管理し、GitHub P
 
 **Repo Observer** は、指定したGitHubユーザーの全リポジトリを自動取得し、以下の形式で出力できます：
 
-1. **Issue管理**: 各リポジトリを1つのIssueとして表現し、GitHub Projectsで可視化
-2. **CSV出力**: 全リポジトリ情報をCSVファイルとして出力し、Excel等で分析
+- **Issue管理**: 各リポジトリを1つのIssueとして表現し、GitHub Projectsで可視化
+- **CSV出力**: 全リポジトリ情報をCSVファイルとして出力し、Excel等で分析
 
 ### 主な特徴
 
 - 🔄 **自動同期**: 毎日自動的にリポジトリ情報を取得・更新（UTC 18:00 / JST 3:00）
-- 📋 **Issue管理**: 各リポジトリを1つのIssueとして表現
-- 📄 **CSV出力**: リポジトリ情報をCSVファイルに出力（毎日自動実行）
-- 📊 **5段階ステータス**: 活動状況を自動判定（頻繁に更新、定期的に更新、時々更新、更新が少ない、停滞中）
+- 📊 **5段階ステータス**: 活動状況を自動判定（頻繁に更新 / 定期的に更新 / 時々更新 / 更新が少ない / 停滞中）
 - 🎯 **Project連動**: GitHub Projects (v2) と自動連携
 - 📈 **詳細な情報**: スター数、フォーク数、最終更新日、リリース情報など
-- 🎛️ **柔軟な設定**: 手動実行時に対象ユーザーやProject番号を指定可能
+- 🎛️ **柔軟な実行**: CSV出力のみ、Issue同期のみ、または両方の実行を選択可能
 - 💻 **TypeScript/Node.js**: 共通化されたスクリプトで保守性向上
 
 ## 📦 管理される情報
 
-各リポジトリについて、以下の情報が自動的に収集・更新されます：
+各リポジトリについて、以下のような情報が自動的に収集・更新されます：
 
-### 📝 説明・設定系
+- **基本情報**: 説明、使用言語、ライセンス、トピックス、ホームページURL
+- **活動指標**: スター数、フォーク数、ウォッチャー数、未解決Issue数、リポジトリサイズ
+- **日時情報**: 作成日、最終更新日、最終Push日、最新リリース
+- **状態・設定**: アーカイブ状態、公開状態、デフォルトブランチ、Issues/Wiki/Projects有効状態
 
-- 説明、使用言語、ライセンス、トピックス、ホームページURL
-
-### 📊 活動指標系
-
-- スター数、フォーク数、ウォッチャー数、未解決Issue数、リポジトリサイズ、活動ステータス
-
-### ⏰ 日時系
-
-- 作成日、最終更新日、最終Push日、Issue最終更新日、最新リリース
-
-### 🔧 状態・設定系
-
-- アーカイブ状態、公開状態、デフォルトブランチ、Issues/Wiki/Projects有効状態
+詳細なプロジェクト構想については [docs/構想.md](docs/構想.md) を参照してください。
 
 ## 🚀 使い方
 
@@ -94,45 +83,41 @@ npm run build
 
 ### 5. ワークフローの実行
 
-#### 🎯 リポジトリ情報同期ワークフロー
+#### 自動実行
 
-CSV出力とIssue同期を1回の実行で完了します。
+毎日 UTC 18:00（JST 3:00）に自動実行されます。
 
-**自動実行**: 毎日 UTC 18:00（JST 3:00）に自動実行されます。
-
-**手動実行**:
+#### 手動実行
 
 1. **Actions** タブを開く
 2. **「リポジトリ情報同期」** を選択
 3. **Run workflow** をクリック
-4. パラメータを入力（オプション）：
+4. 必要に応じてパラメータを調整：
 
-   - **対象ユーザー名**: 監視するリポジトリのユーザー名（デフォルト: `KenichiroArai`）
-   - **Project番号**: 連動するProjectのID（未指定でProject連動なし）
-   - **Projectのステータスフィールド名**: Projectで使用するフィールド名（デフォルト: `Status`）
-   - **プライベートリポジトリを含める**: プライベートリポジトリも対象にする
-   - **アーカイブ済みリポジトリを含める**: アーカイブ済みも対象にする
-   - **サマリーCSVも出力する**: 主要項目のみのサマリーCSVも生成
-   - **CSV出力をスキップ**: Issue同期のみ実行したい場合
-   - **Issue同期をスキップ**: CSV出力のみ実行したい場合
+| パラメータ | デフォルト | 説明 |
+|-----------|-----------|------|
+| 対象ユーザー名 | `KenichiroArai` | 監視するリポジトリのユーザー名 |
+| Project番号 | `15` | 連動するProjectのID（未指定でProject連動なし） |
+| Projectのステータスフィールド名 | `Status` | Projectで使用するフィールド名 |
+| プライベートリポジトリを含める | `true` | プライベートリポジトリも対象にする |
+| アーカイブ済みリポジトリを含める | `true` | アーカイブ済みも対象にする |
+| サマリーCSVも出力する | `true` | 主要項目のみのサマリーCSVも生成 |
+| CSV出力をスキップ | `false` | Issue同期のみ実行 |
+| Issue同期をスキップ | `false` | CSV出力のみ実行 |
 
-**実行パターン**:
+#### 実行パターン
 
 | パターン | 設定 | 実行内容 |
 |---------|------|---------|
-| 両方実行（通常） | デフォルト | CSV出力 + Issue同期 |
-| Issue同期のみ | `skip_csv: true` | Issue同期のみ |
-| CSV出力のみ | `skip_issues: true` | CSV出力のみ |
+| **両方実行**（デフォルト） | そのまま実行 | CSV出力 + Issue同期 |
+| **Issue同期のみ** | `skip_csv: true` | Issue同期のみ |
+| **CSV出力のみ** | `skip_issues: true` | CSV出力のみ |
 
-**特徴**:
-- ✅ **効率的**: ビルドを1回に集約し、成果物を再利用
-- ✅ **安全**: 順次実行でデータの一貫性を保証
-- ✅ **高速**: ビルド済みスクリプトを後続ジョブで再利用
-- ✅ **柔軟**: スキップオプションで片方だけの実行も可能
+#### 出力ファイルの取得
 
-**出力ファイルの取得**:
+ワークフロー実行後、**Actions** タブから実行結果を開き、**Artifacts** セクションからCSVファイルをダウンロードできます。
 
-ワークフロー実行後、**Actions** タブから該当の実行結果を開き、**Artifacts** セクションから CSVファイルをダウンロードできます
+詳細なワークフロー仕様については [docs/ワークフロー同期制御.md](docs/ワークフロー同期制御.md) を参照してください。
 
 ## 📊 ステータス判定ロジック
 
@@ -150,53 +135,39 @@ CSV出力とIssue同期を1回の実行で完了します。
 
 ## 🧩 構成
 
+### ディレクトリ構成
+
 ```text
 repo-observer/
-├── .github/
-│   └── workflows/
-│       └── repo-full-sync.yml     # リポジトリ情報同期（毎日 18:00 UTC）
-├── scripts/                        # TypeScript/Node.jsスクリプト
-│   ├── src/
-│   │   ├── index.ts               # エントリーポイント
-│   │   ├── types.ts               # 型定義
-│   │   ├── repo-fetcher.ts        # リポジトリ情報取得
-│   │   ├── repo-formatter.ts      # データ整形
-│   │   ├── status-calculator.ts   # ステータス判定
-│   │   └── exporters/
-│   │       ├── csv-exporter.ts    # CSV出力
-│   │       └── issue-exporter.ts  # Issue出力
-│   ├── dist/                      # ビルド成果物
-│   ├── output/                    # 出力ファイル
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── README.md
+├── .github/workflows/
+│   └── repo-full-sync.yml           # リポジトリ情報同期ワークフロー
+├── scripts/                          # TypeScript/Node.jsスクリプト
+│   ├── src/                          # ソースコード
+│   │   ├── exporters/                # CSV/Issue出力モジュール
+│   │   └── ...                       # その他のモジュール
+│   └── README.md                     # スクリプト詳細仕様
 ├── docs/
-│   └── 構想.md                    # プロジェクトの構想・詳細設計
-├── LICENSE                        # MITライセンス
-└── README.md                      # このファイル
+│   ├── 構想.md                       # プロジェクトの構想
+│   └── ワークフロー同期制御.md       # ワークフロー詳細仕様
+└── README.md                         # このファイル
 ```
 
 ### アーキテクチャ
 
-```
+```text
 GitHub API
     ↓
-repo-fetcher.ts (リポジトリ情報取得)
+repo-fetcher (リポジトリ情報取得)
     ↓
-status-calculator.ts (ステータス判定)
+status-calculator (ステータス判定)
     ↓
-repo-formatter.ts (データ整形)
+repo-formatter (データ整形)
     ↓
-    ├→ csv-exporter.ts (CSV出力) → CSVファイル
-    └→ issue-exporter.ts (Issue出力) → GitHub Issues + Projects
+    ├→ csv-exporter → CSVファイル
+    └→ issue-exporter → GitHub Issues + Projects
 ```
 
-**共通化のメリット**:
-
-- ✅ **保守性向上**: ロジックの重複を排除し、修正箇所を一箇所に集約
-- ✅ **型安全性**: TypeScriptによる静的型チェックでバグを事前に防止
-- ✅ **拡張性**: 新しい出力形式（JSON、Markdownなど）を容易に追加可能
-- ✅ **テスト容易性**: モジュール化により単体テストが書きやすい
+詳細な技術仕様については [scripts/README.md](scripts/README.md) を参照してください。
 
 ## 🎯 想定される使用例
 
@@ -213,102 +184,38 @@ GitHub Projectでは以下のようなダッシュボードが構築されます
 
 ## 💻 ローカルでの実行
 
-GitHub Actions以外に、ローカル環境でスクリプトを実行することも可能です。
+GitHub Actions以外に、ローカル環境でスクリプトを直接実行することも可能です。
 
-### CSV出力
+詳細な実行方法、環境変数の設定、トラブルシューティングについては [scripts/README.md](scripts/README.md) を参照してください。
 
-```bash
-cd scripts
-export GITHUB_TOKEN=your_github_token
-export TARGET_USER=KenichiroArai
-export OUTPUT_PATH=./output/repositories.csv
-npm run export-csv
-```
-
-### Issue同期
-
-```bash
-cd scripts
-export GITHUB_TOKEN=your_github_token
-export TARGET_USER=KenichiroArai
-export REPOSITORY=owner/repo
-export PROJECT_NUMBER=15
-npm run sync-issues
-```
-
-詳細は [scripts/README.md](scripts/README.md) を参照してください。
-
-## 💡 発展的な使い方
-
-以下の機能は将来的な拡張として検討できます：
-
-- **ラベル管理**: Issueに活動状況に応じたラベルを自動付与
-- **変更通知**: Stars数の増減をSlack等に通知
-- **フィルタリング**: 特定の条件に合うリポジトリのみを管理対象とする
-- **複数ユーザー管理**: 複数のGitHubユーザーのリポジトリを一元管理
-- **JSON出力**: API連携用のJSON形式での出力
-- **Markdown出力**: レポート用のMarkdownドキュメント生成
-
-詳細な実装案については、[docs/構想.md](docs/構想.md) を参照してください。
-
-## ⚠️ 制限事項とトラブルシューティング
+## ⚠️ 制限事項
 
 ### GitHub APIレート制限
 
-このツールはGitHub APIを使用するため、以下のレート制限があります：
-
-#### プライマリレート制限
-
 - **認証済みリクエスト**: 1時間あたり5,000リクエスト
-- **GitHub Actions**: より高い制限（通常は十分）
+- **セカンダリレート制限**: 大量のリポジトリ処理時に発生する可能性あり
 
-#### セカンダリレート制限
+本ツールでは、セカンダリレート制限に対して自動リトライ機能（指数バックオフ方式）を実装しています。
 
-大量のリポジトリを処理する場合、セカンダリレート制限に達する可能性があります。本ツールでは以下の対策を実装しています：
+### ワークフロー実行時間
 
-**自動リトライ機能**
-- セカンダリレート制限エラー検出時、自動的に待機してリトライ
-- 指数バックオフ方式: 1分 → 2分 → 4分 → 8分 → 16分（最大5回）
-- リトライ中は進捗状況をログに出力
+大量のリポジトリ（100以上）を処理する場合、処理完了に時間がかかる可能性があります。
 
-**待機時間の設定**
-- 各リポジトリ処理間に3秒待機
-- Issueキャッシュのページ取得間に2秒待機
-- Project更新などのAPI呼び出し間に適切な間隔を設定
-
-**推奨事項**
-- 大量のリポジトリ（100以上）を処理する場合は、処理完了に時間がかかる可能性があります
-- GitHub Actions の実行ログで進捗状況を確認できます
-- エラーが発生した場合でも、次回実行時に続きから処理されます
-
-### ワークフロー実行時間制限
-
-GitHub Actionsの無料プランでは、ワークフローの実行時間が制限されています：
-
-- **パブリックリポジトリ**: 実質的に無制限
-- **プライベートリポジトリ**: 月あたりの実行時間に制限あり
-
-大量のリポジトリを処理する場合は、実行時間にご注意ください。
+詳細なトラブルシューティングについては [scripts/README.md](scripts/README.md) および [docs/ワークフロー同期制御.md](docs/ワークフロー同期制御.md) を参照してください。
 
 ## 🔧 技術スタック
 
-### ワークフロー
+- **ワークフロー**: GitHub Actions
+- **スクリプト**: TypeScript + Node.js + Octokit
+- **API**: GitHub REST API + GraphQL API
 
-- **GitHub Actions**: ワークフローの自動実行
+詳細な技術仕様については [scripts/README.md](scripts/README.md) を参照してください。
 
-### スクリプト
+## 📚 関連ドキュメント
 
-- **TypeScript**: 型安全な実装
-- **Node.js**: 実行環境
-- **Octokit**: GitHub REST API クライアント
-- **@octokit/graphql**: GitHub GraphQL API クライアント
-- **csv-writer**: CSV出力
-- **date-fns**: 日付処理
-
-### API
-
-- **GitHub REST API**: リポジトリ情報の取得
-- **GitHub GraphQL API**: Project連携
+- **[docs/構想.md](docs/構想.md)** - プロジェクトの構想と背景
+- **[docs/ワークフロー同期制御.md](docs/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
+- **[scripts/README.md](scripts/README.md)** - スクリプトの技術仕様とローカル実行方法
 
 ## 📝 ライセンス
 
@@ -317,13 +224,6 @@ GitHub Actionsの無料プランでは、ワークフローの実行時間が制
 ## 🤝 コントリビューション
 
 バグ報告や機能追加の提案は、Issueやプルリクエストでお気軽にどうぞ！
-
-## 📚 参考資料
-
-- [GitHub Actions ドキュメント](https://docs.github.com/ja/actions)
-- [GitHub REST API](https://docs.github.com/ja/rest)
-- [GitHub GraphQL API](https://docs.github.com/ja/graphql)
-- [GitHub Projects (v2)](https://docs.github.com/ja/issues/planning-and-tracking-with-projects)
 
 ---
 

@@ -82,7 +82,7 @@ node dist/index.js sync-issues
 
 ## 📁 ディレクトリ構成
 
-```
+```text
 scripts/
 ├── src/
 │   ├── index.ts              # エントリーポイント
@@ -151,7 +151,7 @@ const existingIssue = await this.findExistingIssue(owner, repo, title);
 
 #### セカンダリレート制限エラーが発生する場合
 
-```
+```text
 Error: You have exceeded a secondary rate limit. Please wait a few minutes...
 ```
 
@@ -163,7 +163,7 @@ Error: You have exceeded a secondary rate limit. Please wait a few minutes...
 
 #### プライマリレート制限エラーが発生する場合
 
-```
+```text
 Error: API rate limit exceeded
 ```
 
@@ -195,4 +195,3 @@ npx tsc --noEmit
 ## 📝 ライセンス
 
 MIT License
-

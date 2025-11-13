@@ -48,9 +48,9 @@ on:
         default: false
 
 jobs:
-  # ステップ1: リポジトリ情報を1回だけ取得してキャッシュ
-  fetch-repos:
-    name: リポジトリ情報取得
+  # ステップ1: 依存関係をビルドしてキャッシュ
+  build-and-prepare:
+    name: ビルドと準備
     runs-on: ubuntu-latest
     outputs:
       repos-fetched: ${{ steps.fetch.outputs.count }}
@@ -139,7 +139,7 @@ jobs:
   # ステップ2: CSV出力（並列実行可能だが、順次実行で安全性確保）
   export-csv:
     name: CSV出力
-    needs: fetch-repos
+    needs: build-and-prepare
     if: ${{ github.event.inputs.skip_csv != 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -197,7 +197,7 @@ jobs:
       - name: 出力ファイルをアップロード
         uses: actions/upload-artifact@v4
         with:
-          name: repository-csv-full-sync-${{ github.run_number }}-${{ needs.fetch-repos.outputs.workflow-version }}
+          name: repository-csv-full-sync-${{ github.run_number }}-${{ needs.build-and-prepare.outputs.workflow-version }}
           path: docs/data/*.csv
           retention-days: 90
 
@@ -208,9 +208,9 @@ jobs:
   # - リトライは最大5回まで（指数バックオフ: 1分→2分→4分→8分→16分）
   sync-issues:
     name: Issue同期
-    needs: [fetch-repos, export-csv]
+    needs: [build-and-prepare, export-csv]
     # CSV出力がスキップされた場合でも実行できるように
-    if: ${{ always() && github.event.inputs.skip_issues != 'true' && needs.fetch-repos.result == 'success' }}
+    if: ${{ always() && github.event.inputs.skip_issues != 'true' && needs.build-and-prepare.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -247,7 +247,7 @@ jobs:
   # ステップ4: 完了通知
   notify-completion:
     name: 完了通知
-    needs: [fetch-repos, export-csv, sync-issues]
+    needs: [build-and-prepare, export-csv, sync-issues]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -260,4 +260,4 @@ jobs:
           echo "| CSV出力 | ${{ needs.export-csv.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Issue同期 | ${{ needs.sync-issues.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**ワークフローバージョン:** \`${{ needs.fetch-repos.outputs.workflow-version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**ワークフローバージョン:** \`${{ needs.build-and-prepare.outputs.workflow-version }}\`" >> $GITHUB_STEP_SUMMARY

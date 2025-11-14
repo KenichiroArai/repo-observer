@@ -8,6 +8,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class CsvExporter {
+  private resolveDatedOutputPath(basePath: string, exportedAtJst: Date): string {
+    const parsed = path.parse(basePath);
+    const year = exportedAtJst.getUTCFullYear().toString();
+    const month = String(exportedAtJst.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(exportedAtJst.getUTCDate()).padStart(2, '0');
+    const extension = parsed.ext || '.csv';
+    const baseName = parsed.name || 'export';
+    const fileName = `${baseName}-${year}-${month}-${day}${extension}`;
+    const baseDir = parsed.dir || '.';
+    return path.join(baseDir, year, month, fileName);
+  }
+
   /**
    * リポジトリ情報をCSVファイルに出力
    */
@@ -31,23 +43,29 @@ export class CsvExporter {
       console.log(`アーカイブ済みリポジトリを除外: ${beforeCount - filteredRepos.length} 個`);
     }
 
+    const exportedAtUtc = new Date();
+    const exportedAtJst = new Date(exportedAtUtc.getTime() + 9 * 60 * 60 * 1000);
+    const exportedAtUtcStr = exportedAtUtc.toISOString();
+    const exportedAtJstStr = exportedAtJst.toISOString().replace('Z', '+09:00');
+
+    const resolvedOutputPath = this.resolveDatedOutputPath(
+      config.outputPath,
+      exportedAtJst
+    );
+
     // 出力ディレクトリを作成
-    const outputDir = path.dirname(config.outputPath);
+    const outputDir = path.dirname(resolvedOutputPath);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
     const appendMode =
-      fs.existsSync(config.outputPath) && fs.statSync(config.outputPath).size > 0;
-    const exportedAtUtc = new Date();
-    const exportedAtUtcStr = exportedAtUtc.toISOString();
-    const exportedAtJstStr = new Date(exportedAtUtc.getTime() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .replace('Z', '+09:00');
+      fs.existsSync(resolvedOutputPath) &&
+      fs.statSync(resolvedOutputPath).size > 0;
 
     // CSVライターを作成
     const csvWriter = createObjectCsvWriter({
-      path: config.outputPath,
+      path: resolvedOutputPath,
       header: [
         { id: 'exportedAtUtc', title: 'エクスポート日時(UTC)' },
         { id: 'exportedAtJst', title: 'エクスポート日時(JST)' },
@@ -119,7 +137,9 @@ export class CsvExporter {
     // CSVに書き込み
     await csvWriter.writeRecords(records);
 
-    console.log(`✅ ${filteredRepos.length} 個のリポジトリを ${config.outputPath} に出力しました`);
+    console.log(
+      `✅ ${filteredRepos.length} 個のリポジトリを ${resolvedOutputPath} に出力しました`
+    );
   }
 
   /**
@@ -131,21 +151,27 @@ export class CsvExporter {
   ): Promise<void> {
     console.log('サマリーCSVを出力します...');
 
-    const outputDir = path.dirname(outputPath);
+    const exportedAtUtc = new Date();
+    const exportedAtJst = new Date(exportedAtUtc.getTime() + 9 * 60 * 60 * 1000);
+    const exportedAtUtcStr = exportedAtUtc.toISOString();
+    const exportedAtJstStr = exportedAtJst.toISOString().replace('Z', '+09:00');
+
+    const resolvedOutputPath = this.resolveDatedOutputPath(
+      outputPath,
+      exportedAtJst
+    );
+
+    const outputDir = path.dirname(resolvedOutputPath);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
     const appendMode =
-      fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0;
-    const exportedAtUtc = new Date();
-    const exportedAtUtcStr = exportedAtUtc.toISOString();
-    const exportedAtJstStr = new Date(exportedAtUtc.getTime() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .replace('Z', '+09:00');
+      fs.existsSync(resolvedOutputPath) &&
+      fs.statSync(resolvedOutputPath).size > 0;
 
     const csvWriter = createObjectCsvWriter({
-      path: outputPath,
+      path: resolvedOutputPath,
       header: [
         { id: 'exportedAtUtc', title: 'エクスポート日時(UTC)' },
         { id: 'exportedAtJst', title: 'エクスポート日時(JST)' },
@@ -176,7 +202,7 @@ export class CsvExporter {
     }));
 
     await csvWriter.writeRecords(records);
-    console.log(`✅ サマリーを ${outputPath} に出力しました`);
+    console.log(`✅ サマリーを ${resolvedOutputPath} に出力しました`);
   }
 }
 

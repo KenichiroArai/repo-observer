@@ -44,6 +44,13 @@ node dist/index.js export-csv
 
 > ℹ️ 出力CSVは既存ファイルの末尾へ追記され、各行には `エクスポート日時(UTC)` と `エクスポート日時(JST)` の2列が付与されます。日次・定期実行時も履歴が1つのファイルで管理できます。
 
+#### 📁 日付別ファイル構成
+
+- `OUTPUT_PATH` に指定したパスを基準に、`YYYY/MM` の階層と `ファイル名-YYYY-MM-DD.csv` の形式でCSVを作成します。
+- 例: `OUTPUT_PATH=./output/repositories.csv` かつ 2025年1月4日(JST)に実行した場合
+  `./output/2025/01/repositories-2025-01-04.csv`
+- 同じ日付で再度実行すると同じファイルの末尾に追記されます。
+
 ### Issue同期
 
 ```bash

@@ -200,7 +200,7 @@ jobs:
           cat /tmp/csv_files.txt
 
           {
-            echo "paths<<'EOF'"
+            echo "paths<<EOF"
             cat /tmp/csv_files.txt
             echo "EOF"
           } >> $GITHUB_OUTPUT

@@ -37,10 +37,15 @@ export class CsvExporter {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
+    const appendMode =
+      fs.existsSync(config.outputPath) && fs.statSync(config.outputPath).size > 0;
+    const exportedAt = new Date().toISOString();
+
     // CSVライターを作成
     const csvWriter = createObjectCsvWriter({
       path: config.outputPath,
       header: [
+        { id: 'exportedAt', title: 'エクスポート日時' },
         { id: 'name', title: 'リポジトリ名' },
         { id: 'fullName', title: 'フルネーム' },
         { id: 'description', title: '説明' },
@@ -69,11 +74,13 @@ export class CsvExporter {
         { id: 'releaseInfo', title: '最新リリース' },
         { id: 'url', title: 'URL' }
       ],
+      append: appendMode,
       encoding: 'utf8'
     });
 
     // データを変換
     const records = filteredRepos.map(repo => ({
+      exportedAt,
       name: repo.name,
       fullName: repo.fullName,
       description: repo.description,
@@ -123,9 +130,14 @@ export class CsvExporter {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
+    const appendMode =
+      fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0;
+    const exportedAt = new Date().toISOString();
+
     const csvWriter = createObjectCsvWriter({
       path: outputPath,
       header: [
+        { id: 'exportedAt', title: 'エクスポート日時' },
         { id: 'name', title: 'リポジトリ名' },
         { id: 'status', title: 'ステータス' },
         { id: 'stars', title: 'スター数' },
@@ -135,10 +147,12 @@ export class CsvExporter {
         { id: 'pushedDate', title: '最終Push' },
         { id: 'url', title: 'URL' }
       ],
+      append: appendMode,
       encoding: 'utf8'
     });
 
     const records = repos.map(repo => ({
+      exportedAt,
       name: repo.name,
       status: repo.activity.status,
       stars: repo.stars,

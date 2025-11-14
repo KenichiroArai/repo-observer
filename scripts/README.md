@@ -42,6 +42,8 @@ npm run export-csv
 node dist/index.js export-csv
 ```
 
+> ℹ️ 出力CSVは既存ファイルの末尾へ追記され、各行には `エクスポート日時` 列が付与されます。日次・定期実行時も履歴が1つのファイルで管理できます。
+
 ### Issue同期
 
 ```bash
@@ -72,6 +74,8 @@ node dist/index.js sync-issues
 | `INCLUDE_PRIVATE` | プライベートリポジトリを含める | - | false |
 | `INCLUDE_ARCHIVED` | アーカイブ済みを含める | - | false |
 | `EXPORT_SUMMARY` | サマリーCSVも出力 | - | false |
+
+CSVの各行には `エクスポート日時` 列が含まれ、同じファイルに追記されるため、日時ごとの履歴をそのまま残せます。
 
 ### Issue同期用
 

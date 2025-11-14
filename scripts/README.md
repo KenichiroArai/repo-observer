@@ -44,11 +44,12 @@ node dist/index.js export-csv
 
 > ℹ️ 出力CSVは既存ファイルの末尾へ追記され、各行には `エクスポート日時(UTC)` と `エクスポート日時(JST)` の2列が付与されます。日次・定期実行時も履歴が1つのファイルで管理できます。
 
-#### 📁 日付別ファイル構成
+#### 📁 日付・種類別ファイル構成
 
-- `OUTPUT_PATH` に指定したパスを基準に、`YYYY/MM` の階層と `ファイル名-YYYY-MM-DD.csv` の形式でCSVを作成します。
-- 例: `OUTPUT_PATH=./output/repositories.csv` かつ 2025年1月4日(JST)に実行した場合
-  `./output/2025/01/repositories-2025-01-04.csv`
+- `OUTPUT_PATH` に指定したパスを基準に、`docs/data/<ファイル種類>/YYYY/MM/ファイル名-YYYY-MM-DD.csv` 形式でCSVを作成します。
+- 例: `OUTPUT_PATH=./docs/data/repositories.csv` かつ 2025年1月4日(JST)に実行した場合
+  `./docs/data/repositories/2025/01/repositories-2025-01-04.csv`
+- 「ファイル種類」は `OUTPUT_PATH` のファイル名（拡張子除く）で自動判定されます。
 - 同じ日付で再度実行すると同じファイルの末尾に追記されます。
 
 ### Issue同期
@@ -77,7 +78,7 @@ node dist/index.js sync-issues
 
 | 変数名 | 説明 | 必須 | デフォルト値 |
 |--------|------|------|-------------|
-| `OUTPUT_PATH` | 出力先パス | - | ./output/repositories.csv |
+| `OUTPUT_PATH` | 出力先パス（例: `./docs/data/repositories.csv`） | - | ./output/repositories.csv |
 | `INCLUDE_PRIVATE` | プライベートリポジトリを含める | - | false |
 | `INCLUDE_ARCHIVED` | アーカイブ済みを含める | - | false |
 | `EXPORT_SUMMARY` | サマリーCSVも出力 | - | false |

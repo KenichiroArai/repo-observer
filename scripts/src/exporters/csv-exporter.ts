@@ -17,7 +17,8 @@ export class CsvExporter {
     const baseName = parsed.name || 'export';
     const fileName = `${baseName}-${year}-${month}-${day}${extension}`;
     const baseDir = parsed.dir || '.';
-    return path.join(baseDir, year, month, fileName);
+    const categoryDir = path.join(baseDir, baseName);
+    return path.join(categoryDir, year, month, fileName);
   }
 
   /**

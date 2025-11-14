@@ -178,11 +178,38 @@ jobs:
           cd scripts
           node dist/index.js export-csv
 
+      - name: 最新CSVファイルを収集
+        id: collect_csv
+        run: |
+          git status -s -- docs/data > /tmp/csv_changes.txt
+          if [ ! -s /tmp/csv_changes.txt ]; then
+            echo "paths=" >> $GITHUB_OUTPUT
+            echo "変更されたCSVファイルはありません。"
+            exit 0
+          fi
+
+          cut -c4- /tmp/csv_changes.txt | grep -E '\.csv$' > /tmp/csv_files.txt || true
+
+          if [ ! -s /tmp/csv_files.txt ]; then
+            echo "paths=" >> $GITHUB_OUTPUT
+            echo "CSV拡張子の変更は検出されませんでした。"
+            exit 0
+          fi
+
+          echo "以下のファイルをアップロード対象とします:"
+          cat /tmp/csv_files.txt
+
+          {
+            echo "paths<<'EOF'"
+            cat /tmp/csv_files.txt
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: CSVファイルをリポジトリにコミット
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/data/*.csv
+          git add docs/data
 
           # 変更があればコミット
           if git diff --staged --quiet; then
@@ -198,10 +225,12 @@ jobs:
           fi
 
       - name: 出力ファイルをアップロード
+        if: ${{ steps.collect_csv.outputs.paths != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: repository-csv-full-sync-${{ github.run_number }}-${{ needs.build-and-prepare.outputs.workflow-version }}
-          path: docs/data/*.csv
+          path: ${{ steps.collect_csv.outputs.paths }}
+          if-no-files-found: ignore
           retention-days: 90
 
   # ステップ3: Issue同期（CSV出力完了後に実行）

@@ -39,13 +39,18 @@ export class CsvExporter {
 
     const appendMode =
       fs.existsSync(config.outputPath) && fs.statSync(config.outputPath).size > 0;
-    const exportedAt = new Date().toISOString();
+    const exportedAtUtc = new Date();
+    const exportedAtUtcStr = exportedAtUtc.toISOString();
+    const exportedAtJstStr = new Date(exportedAtUtc.getTime() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .replace('Z', '+09:00');
 
     // CSVライターを作成
     const csvWriter = createObjectCsvWriter({
       path: config.outputPath,
       header: [
-        { id: 'exportedAt', title: 'エクスポート日時' },
+        { id: 'exportedAtUtc', title: 'エクスポート日時(UTC)' },
+        { id: 'exportedAtJst', title: 'エクスポート日時(JST)' },
         { id: 'name', title: 'リポジトリ名' },
         { id: 'fullName', title: 'フルネーム' },
         { id: 'description', title: '説明' },
@@ -80,7 +85,8 @@ export class CsvExporter {
 
     // データを変換
     const records = filteredRepos.map(repo => ({
-      exportedAt,
+      exportedAtUtc: exportedAtUtcStr,
+      exportedAtJst: exportedAtJstStr,
       name: repo.name,
       fullName: repo.fullName,
       description: repo.description,
@@ -132,12 +138,17 @@ export class CsvExporter {
 
     const appendMode =
       fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0;
-    const exportedAt = new Date().toISOString();
+    const exportedAtUtc = new Date();
+    const exportedAtUtcStr = exportedAtUtc.toISOString();
+    const exportedAtJstStr = new Date(exportedAtUtc.getTime() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .replace('Z', '+09:00');
 
     const csvWriter = createObjectCsvWriter({
       path: outputPath,
       header: [
-        { id: 'exportedAt', title: 'エクスポート日時' },
+        { id: 'exportedAtUtc', title: 'エクスポート日時(UTC)' },
+        { id: 'exportedAtJst', title: 'エクスポート日時(JST)' },
         { id: 'name', title: 'リポジトリ名' },
         { id: 'status', title: 'ステータス' },
         { id: 'stars', title: 'スター数' },
@@ -152,7 +163,8 @@ export class CsvExporter {
     });
 
     const records = repos.map(repo => ({
-      exportedAt,
+      exportedAtUtc: exportedAtUtcStr,
+      exportedAtJst: exportedAtJstStr,
       name: repo.name,
       status: repo.activity.status,
       stars: repo.stars,

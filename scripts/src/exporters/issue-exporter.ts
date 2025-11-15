@@ -3,8 +3,15 @@
  */
 
 import { Octokit } from '@octokit/rest';
-import { graphql } from '@octokit/graphql';
+import { graphql, GraphqlResponseError } from '@octokit/graphql';
 import { FormattedRepoInfo, IssueExportConfig, RepoStatus } from '../types.js';
+
+class ProjectConfigurationError extends Error {
+  constructor(message: string, public cause?: unknown) {
+    super(message);
+    this.name = 'ProjectConfigurationError';
+  }
+}
 
 interface ProjectInfo {
   projectId: string;
@@ -167,6 +174,10 @@ export class IssueExporter {
         projectInfo = await this.fetchProjectInfo();
         console.log('✅ Project情報を取得しました');
       } catch (error) {
+        if (error instanceof ProjectConfigurationError) {
+          console.error(`❌ ${error.message}`);
+          throw error;
+        }
         console.warn('⚠️ Project情報の取得に失敗しました:', error);
       }
     }
@@ -369,12 +380,21 @@ export class IssueExporter {
       }
     `;
 
-    const result: any = await this.retryWithBackoff(() =>
-      this.graphqlClient(query, {
-        user: owner,
-        number: this.config.projectNumber!
-      })
-    );
+    let result: any;
+    try {
+      result = await this.retryWithBackoff(() =>
+        this.graphqlClient(query, {
+          user: owner,
+          number: this.config.projectNumber!
+        })
+      );
+    } catch (error) {
+      if (this.isProjectNotFoundError(error)) {
+        const message = `Project番号 ${this.config.projectNumber} をユーザー ${owner} で取得できませんでした。Project設定を確認してください。`;
+        throw new ProjectConfigurationError(message, error);
+      }
+      throw error;
+    }
 
     const project = result.user.projectV2;
     const statusField = project.fields.nodes.find(
@@ -529,6 +549,16 @@ export class IssueExporter {
     }
 
     return item.id;
+  }
+
+  /**
+   * Project取得エラーがProject番号未存在によるものか判定
+   */
+  private isProjectNotFoundError(error: unknown): error is GraphqlResponseError<any> {
+    if (error instanceof GraphqlResponseError) {
+      return error.errors?.some(e => e.type === 'NOT_FOUND' && e.message?.includes('ProjectV2')) ?? false;
+    }
+    return false;
   }
 }
 

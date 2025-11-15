@@ -68,6 +68,8 @@ node dist/index.js sync-issues
 ```
 
 > ⚠️ 必ず事前に `export-csv` を実行し、最新のCSVファイルを生成してから `sync-issues` を実行してください。Issue同期はCSVの内容を再利用するため、APIから再取得は行いません。
+>
+> 🚨 **Project番号チェック**: `PROJECT_NUMBER` で指定したProjectが存在しない場合は `sync-issues` がエラーで即座に停止し、GitHub Actions上でも失敗ステータスになります。URL末尾の番号と対象ユーザーを再確認してから実行してください。
 
 ## ⚙️ 環境変数
 

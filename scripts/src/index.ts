@@ -7,6 +7,7 @@ import { RepoFetcher } from './repo-fetcher.js';
 import { RepoFormatter } from './repo-formatter.js';
 import { CsvExporter } from './exporters/csv-exporter.js';
 import { IssueExporter } from './exporters/issue-exporter.js';
+import { CsvImporter } from './csv-importer.js';
 import { GitHubConfig, CsvExportConfig, IssueExportConfig } from './types.js';
 
 /**
@@ -87,13 +88,11 @@ export async function syncIssues() {
 
   const config: GitHubConfig = { token, targetUser };
 
-  // リポジトリ情報を取得
-  const fetcher = new RepoFetcher(config);
-  const repos = await fetcher.fetchAllRepositories();
-
-  // 情報を整形
-  const formatter = new RepoFormatter();
-  const formattedRepos = formatter.formatAll(repos);
+  // CSVからリポジトリ情報を読み込み
+  const csvInputPath =
+    process.env.CSV_INPUT_PATH || process.env.OUTPUT_PATH || './output/repositories.csv';
+  const importer = new CsvImporter(csvInputPath);
+  const formattedRepos = await importer.loadLatestRepositories();
 
   // Issue同期
   const issueExporter = new IssueExporter(token, {
@@ -147,6 +146,7 @@ async function main() {
     REPOSITORY           - 同期先リポジトリ（例: owner/repo）（必須）
     PROJECT_NUMBER       - Project番号（オプション）
     PROJECT_STATUS_FIELD - ステータスフィールド名（デフォルト: Status）
+    CSV_INPUT_PATH       - Issue同期で参照するCSV（デフォルト: OUTPUT_PATHと同じ）
     INCLUDE_PRIVATE      - プライベートリポジトリを含める（true/false）
     INCLUDE_ARCHIVED     - アーカイブ済みを含める（true/false）
 

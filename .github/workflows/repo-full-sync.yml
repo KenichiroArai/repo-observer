@@ -36,11 +36,6 @@ on:
         type: boolean
         required: false
         default: true
-      skip_csv:
-        description: "CSV出力をスキップ（Issue同期のみ実行）"
-        type: boolean
-        required: false
-        default: false
       skip_issues:
         description: "Issue同期をスキップ（CSV出力のみ実行）"
         type: boolean
@@ -143,7 +138,6 @@ jobs:
   export-csv:
     name: CSV出力
     needs: build-and-prepare
-    if: ${{ github.event.inputs.skip_csv != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -177,6 +171,14 @@ jobs:
         run: |
           cd scripts
           node dist/index.js export-csv
+
+      - name: Issue同期用CSVを共有
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-repositories-csv
+          path: docs/data/repositories
+          if-no-files-found: error
+          retention-days: 1
 
       - name: 最新CSVファイルを収集
         id: collect_csv
@@ -241,8 +243,8 @@ jobs:
   sync-issues:
     name: Issue同期
     needs: [build-and-prepare, export-csv]
-    # CSV出力がスキップされた場合でも実行できるように
-    if: ${{ always() && github.event.inputs.skip_issues != 'true' && needs.build-and-prepare.result == 'success' }}
+    # CSV出力で生成したデータを再利用する
+    if: ${{ github.event.inputs.skip_issues != 'true' && needs.build-and-prepare.result == 'success' && needs.export-csv.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -263,6 +265,12 @@ jobs:
           name: built-scripts
           path: scripts/
 
+      - name: CSVデータを取得
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-repositories-csv
+          path: docs/data
+
       - name: Issue同期を実行
         env:
           GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
@@ -272,6 +280,7 @@ jobs:
           PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
+          CSV_INPUT_PATH: ../docs/data/repositories.csv
         run: |
           cd scripts
           node dist/index.js sync-issues

@@ -263,7 +263,7 @@ jobs:
 
       - name: Issue同期を実行
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
           REPOSITORY: ${{ github.repository }}
           PROJECT_NUMBER: ${{ github.event.inputs.project_number || '15' }}

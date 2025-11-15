@@ -119,6 +119,21 @@ export class CsvImporter {
       throw new Error(`CSVファイルが見つかりません: ${categoryDir}`);
     }
 
+    const datedFiles = csvFiles
+      .map(file => ({
+        file,
+        date: this.extractDateFromFilename(file)
+      }))
+      .filter(
+        (entry): entry is { file: string; date: Date } =>
+          entry.date !== null && !Number.isNaN(entry.date.getTime())
+      );
+
+    if (datedFiles.length > 0) {
+      datedFiles.sort((a, b) => b.date.getTime() - a.date.getTime());
+      return datedFiles[0].file;
+    }
+
     csvFiles.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
     return csvFiles[0];
   }
@@ -144,6 +159,18 @@ export class CsvImporter {
     }
 
     return files;
+  }
+
+  private extractDateFromFilename(filePath: string): Date | null {
+    const fileName = path.basename(filePath);
+    const match = fileName.match(/-(\d{4})-(\d{2})-(\d{2})\.csv$/);
+    if (!match) {
+      return null;
+    }
+
+    const [, year, month, day] = match;
+    const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private mapRowToRepo(row: CsvRow): FormattedRepoInfo {

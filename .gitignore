@@ -12,8 +12,8 @@ dist/
 scripts/output/
 scripts/*.csv
 
-# docs/data/配下のCSVファイルは追跡する（例外）
-!docs/data/*.csv
+# docs/data/配下のCSVファイルは階層を問わず追跡する（例外）
+!docs/data/**/*.csv
 
 # IDE
 .vscode/

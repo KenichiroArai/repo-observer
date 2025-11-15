@@ -19,6 +19,8 @@ interface ProjectInfo {
   statusOptions: Map<RepoStatus, string>;
 }
 
+const SECONDARY_RATE_LIMIT_MAX_DELAY_MS = 60 * 60 * 1000; // 1 hour
+
 export class IssueExporter {
   private octokit: Octokit;
   private graphqlClient: typeof graphql;
@@ -47,7 +49,7 @@ export class IssueExporter {
    */
   private async retryWithBackoff<T>(
     fn: () => Promise<T>,
-    maxRetries: number = 5,
+    maxRetries: number = 6,
     initialDelayMs: number = 60000
   ): Promise<T> {
     let lastError: any;
@@ -59,8 +61,12 @@ export class IssueExporter {
 
         // セカンダリレート制限エラーの場合
         if (error.status === 403 && error.message?.includes('secondary rate limit')) {
-          const delayMs = initialDelayMs * Math.pow(2, i);
-          const delayMinutes = (delayMs / 60000).toFixed(1);
+          const delayMs = Math.min(
+            initialDelayMs * Math.pow(2, i),
+            SECONDARY_RATE_LIMIT_MAX_DELAY_MS
+          );
+          const delayMinutes =
+            delayMs >= 60000 ? (delayMs / 60000).toFixed(delayMs >= 3600000 ? 0 : 1) : '0.0';
           console.warn(`⚠️ セカンダリレート制限に達しました。${delayMinutes}分（${delayMs}ms）待機してリトライします... (${i + 1}/${maxRetries + 1})`);
           console.warn(`  リクエストID: ${error.request?.url || 'N/A'}`);
           await this.sleep(delayMs);

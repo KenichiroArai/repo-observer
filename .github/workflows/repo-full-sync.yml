@@ -82,16 +82,6 @@ jobs:
           echo "| ワークフロー最終更新者 | $WORKFLOW_LAST_AUTHOR |" >> $GITHUB_STEP_SUMMARY
           echo "| ワークフロー最終コミットメッセージ | $WORKFLOW_LAST_MESSAGE |" >> $GITHUB_STEP_SUMMARY
 
-          # 実行コミットとワークフロー最終更新が一致するか確認
-          if [ "$RUN_COMMIT" = "$WORKFLOW_LAST_COMMIT" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ **ワークフローファイルは最新コミットです**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **注意: ワークフローファイルは最新コミットではありません**" >> $GITHUB_STEP_SUMMARY
-            echo "実行コミット(\`${RUN_COMMIT_SHORT}\`)とワークフロー最終更新コミット(\`${WORKFLOW_LAST_COMMIT:0:8}\`)が異なります" >> $GITHUB_STEP_SUMMARY
-          fi
-
           # 出力変数として保存
           echo "info=${WORKFLOW_LAST_COMMIT:0:8}_$(date -u +"%Y%m%d_%H%M%S")" >> $GITHUB_OUTPUT
 

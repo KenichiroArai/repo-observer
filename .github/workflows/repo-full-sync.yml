@@ -36,11 +36,11 @@ on:
         type: boolean
         required: false
         default: true
-      skip_issues:
-        description: "Issue同期をスキップ（CSV出力のみ実行）"
+      run_issue_sync:
+        description: "Issue同期も実行する"
         type: boolean
         required: false
-        default: false
+        default: true
 
 jobs:
   # ステップ1: 依存関係をビルドしてキャッシュ
@@ -244,7 +244,7 @@ jobs:
     name: Issue同期
     needs: [build-and-prepare, export-csv]
     # CSV出力で生成したデータを再利用する
-    if: ${{ github.event.inputs.skip_issues != 'true' && needs.build-and-prepare.result == 'success' && needs.export-csv.result == 'success' }}
+    if: ${{ (github.event.inputs.run_issue_sync != 'false') && needs.build-and-prepare.result == 'success' && needs.export-csv.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       issues: write

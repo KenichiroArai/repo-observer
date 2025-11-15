@@ -88,7 +88,19 @@ export class CsvImporter {
       trim: true
     }) as CsvRow[];
 
-    return rows.map(row => this.mapRowToRepo(row));
+    if (rows.length === 0) {
+      console.warn('CSVファイルに有効なレコードがありません。');
+      return [];
+    }
+
+    const latestExportedAtUtc = rows.reduce<string>((latest, row) => {
+      return row.exportedAtUtc > latest ? row.exportedAtUtc : latest;
+    }, rows[0].exportedAtUtc);
+
+    const latestRows = rows.filter(row => row.exportedAtUtc === latestExportedAtUtc);
+    console.log(`最新エクスポート時刻 (${latestExportedAtUtc}) の ${latestRows.length} 件を使用します`);
+
+    return latestRows.map(row => this.mapRowToRepo(row));
   }
 
   private resolveLatestCsvPath(): string {

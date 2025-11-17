@@ -1,4 +1,4 @@
-import Papa from 'papaparse';
+import { parse, ParseResult } from 'papaparse';
 
 export interface RepositoryData {
   exportedAtUtc: string;
@@ -140,10 +140,9 @@ export async function loadLatestRepositories(): Promise<RepositoryData[]> {
     }
 
     const text = await response.text();
-    const result = Papa.parse(text, {
+    const result: ParseResult<Record<string, unknown>> = parse(text, {
       header: true,
       skipEmptyLines: true,
-      encoding: 'UTF-8',
     });
 
     const rows = result.data as any[];
@@ -189,10 +188,9 @@ export async function loadLatestSummary(): Promise<RepositorySummary[]> {
     }
 
     const text = await response.text();
-    const result = Papa.parse(text, {
+    const result: ParseResult<Record<string, unknown>> = parse(text, {
       header: true,
       skipEmptyLines: true,
-      encoding: 'UTF-8',
     });
 
     const rows = result.data as any[];

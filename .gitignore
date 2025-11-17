@@ -15,6 +15,17 @@ scripts/*.csv
 # docs/data/配下のCSVファイルは階層を問わず追跡する（例外）
 !docs/data/**/*.csv
 
+# Next.js (docs/)
+docs/.next/
+docs/out/
+docs/.swc/
+docs/build/
+docs/.env*.local
+docs/.vercel
+
+# Next.js キャッシュ
+docs/.next/cache/
+
 # IDE
 .vscode/
 .idea/

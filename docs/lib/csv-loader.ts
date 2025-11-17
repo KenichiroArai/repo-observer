@@ -106,13 +106,32 @@ function mapRow(row: any, headerMap: Record<string, string>): any {
   return mapped;
 }
 
+function getBasePath(): string {
+  if (typeof window === 'undefined') return '';
+
+  // URLからbasePathを取得
+  // 例: https://username.github.io/repo-name/docs/dashboard
+  // → basePath = /repo-name/docs
+  const pathname = window.location.pathname;
+  const parts = pathname.split('/').filter(Boolean);
+
+  // /docs が含まれている場合、その前までがbasePath
+  const docsIndex = parts.indexOf('docs');
+  if (docsIndex > 0) {
+    return '/' + parts.slice(0, docsIndex + 1).join('/');
+  }
+
+  // /docs が含まれていない場合、最初の2つのパス（ユーザー名/リポジトリ名）をbasePathとする
+  if (parts.length >= 2) {
+    return '/' + parts.slice(0, 2).join('/') + '/docs';
+  }
+
+  return '';
+}
+
 export async function loadLatestRepositories(): Promise<RepositoryData[]> {
   try {
-    // Next.jsのbasePathを使用（next.config.jsで設定）
-    // GitHub Pagesで /docs フォルダを公開する場合、basePathは /repo-name/docs
-    const basePath = typeof window !== 'undefined'
-      ? window.location.pathname.split('/').slice(0, 3).join('/') || ''
-      : '';
+    const basePath = getBasePath();
 
     // 最新のCSVファイルを探す
     const response = await fetch(`${basePath}/data/repositories/2025/11/repositories-2025-11-17.csv`);
@@ -162,10 +181,7 @@ export async function loadLatestRepositories(): Promise<RepositoryData[]> {
 
 export async function loadLatestSummary(): Promise<RepositorySummary[]> {
   try {
-    // Next.jsのbasePathを使用（next.config.jsで設定）
-    const basePath = typeof window !== 'undefined'
-      ? window.location.pathname.split('/').slice(0, 3).join('/') || ''
-      : '';
+    const basePath = getBasePath();
 
     const response = await fetch(`${basePath}/data/repositories-summary/2025/11/repositories-summary-2025-11-17.csv`);
     if (!response.ok) {

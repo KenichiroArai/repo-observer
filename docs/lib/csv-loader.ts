@@ -108,8 +108,14 @@ function mapRow(row: any, headerMap: Record<string, string>): any {
 
 export async function loadLatestRepositories(): Promise<RepositoryData[]> {
   try {
+    // Next.jsのbasePathを使用（next.config.jsで設定）
+    // GitHub Pagesで /docs フォルダを公開する場合、basePathは /repo-name/docs
+    const basePath = typeof window !== 'undefined'
+      ? window.location.pathname.split('/').slice(0, 3).join('/') || ''
+      : '';
+
     // 最新のCSVファイルを探す
-    const response = await fetch('/data/repositories/2025/11/repositories-2025-11-17.csv');
+    const response = await fetch(`${basePath}/data/repositories/2025/11/repositories-2025-11-17.csv`);
     if (!response.ok) {
       throw new Error('CSVファイルの読み込みに失敗しました');
     }
@@ -156,7 +162,12 @@ export async function loadLatestRepositories(): Promise<RepositoryData[]> {
 
 export async function loadLatestSummary(): Promise<RepositorySummary[]> {
   try {
-    const response = await fetch('/data/repositories-summary/2025/11/repositories-summary-2025-11-17.csv');
+    // Next.jsのbasePathを使用（next.config.jsで設定）
+    const basePath = typeof window !== 'undefined'
+      ? window.location.pathname.split('/').slice(0, 3).join('/') || ''
+      : '';
+
+    const response = await fetch(`${basePath}/data/repositories-summary/2025/11/repositories-summary-2025-11-17.csv`);
     if (!response.ok) {
       throw new Error('CSVファイルの読み込みに失敗しました');
     }

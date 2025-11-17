@@ -13,8 +13,13 @@ export default function DocsPage() {
   useEffect(() => {
     async function fetchDocs() {
       try {
+        // Next.jsのbasePathを使用（next.config.jsで設定）
+        const basePath = typeof window !== 'undefined'
+          ? window.location.pathname.split('/').slice(0, 3).join('/') || ''
+          : '';
+
         // README.mdを読み込む
-        const readmeResponse = await fetch('/README.md');
+        const readmeResponse = await fetch(`${basePath}/README.md`);
         if (readmeResponse.ok) {
           const readmeText = await readmeResponse.text();
           setReadme(readmeText);
@@ -30,7 +35,7 @@ export default function DocsPage() {
 
         for (const doc of docFiles) {
           try {
-            const response = await fetch(doc.path);
+            const response = await fetch(`${basePath}${doc.path}`);
             if (response.ok) {
               docs[doc.key] = await response.text();
             }

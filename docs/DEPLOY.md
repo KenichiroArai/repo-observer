@@ -1,0 +1,82 @@
+# GitHub Pages デプロイガイド
+
+## 現在のアクセス方法
+
+現在、GitHub Pagesの設定で `/docs` フォルダを公開するように設定されている場合、以下のURLでアクセスできます：
+
+```
+https://<ユーザー名>.github.io/<リポジトリ名>/docs/
+```
+
+例: `https://kenichiroarai.github.io/repo-observer/docs/`
+
+## 自動デプロイの設定
+
+### 1. GitHub Pagesの設定
+
+1. リポジトリの **Settings** → **Pages** を開く
+2. **Source** を **"GitHub Actions"** に設定
+3. 保存
+
+### 2. ワークフローの動作
+
+`.github/workflows/deploy-docs.yml` が以下のタイミングで自動実行されます：
+
+- `docs/` フォルダ内のファイルが変更されたとき
+- 手動実行時（Actions タブから実行可能）
+
+### 3. デプロイの流れ
+
+1. Next.jsアプリをビルド
+2. `docs/out` フォルダにビルド結果を出力
+3. ビルド結果を `docs/` フォルダのルートにコピー
+4. `.nojekyll` ファイルを作成（Jekyllを無効化）
+5. GitHub Pagesにデプロイ
+
+## 手動デプロイ
+
+ローカルでビルドしてデプロイする場合：
+
+```bash
+cd docs
+npm install
+npm run build
+npm run deploy
+```
+
+その後、変更をコミット・プッシュ：
+
+```bash
+git add docs/
+git commit -m "Update docs"
+git push
+```
+
+## トラブルシューティング
+
+### README.mdが表示される
+
+- ワークフローが正常に実行されているか確認（Actions タブ）
+- `docs/` フォルダのルートに `index.html` が存在するか確認
+- `.nojekyll` ファイルが存在するか確認
+
+### 404エラーが表示される
+
+- `next.config.js` の `basePath` が正しく設定されているか確認
+- リポジトリ名と `basePath` が一致しているか確認
+
+### アセット（画像、CSS等）が読み込めない
+
+- ブラウザの開発者ツールでネットワークエラーを確認
+- `assetPrefix` が正しく設定されているか確認
+
+## 確認方法
+
+デプロイが成功したら、以下のURLでサイトにアクセスできます：
+
+```
+https://<ユーザー名>.github.io/<リポジトリ名>/docs/
+```
+
+または、リポジトリの Settings → Pages に表示されているURLを使用してください。
+

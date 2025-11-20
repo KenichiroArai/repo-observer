@@ -14,16 +14,20 @@ export default function DocsPage() {
     async function fetchDocs() {
       try {
         // basePathを取得
+        // GitHub Pagesで /docs フォルダを公開する場合:
+        // URL: https://username.github.io/repo-name/
+        // docs/ フォルダの内容がルートとして公開される
+        // Next.jsのbasePathは /repo-name に設定されている
+        // したがって、basePathは /repo-name を返す（/docs は含めない）
         const getBasePath = () => {
           if (typeof window === 'undefined') return '';
           const pathname = window.location.pathname;
           const parts = pathname.split('/').filter(Boolean);
-          const docsIndex = parts.indexOf('docs');
-          if (docsIndex > 0) {
-            return '/' + parts.slice(0, docsIndex + 1).join('/');
-          }
-          if (parts.length >= 2) {
-            return '/' + parts.slice(0, 2).join('/') + '/docs';
+
+          // リポジトリ名（最初のパスセグメント）を取得
+          // 例: /repo-observer/docs → basePath = /repo-observer
+          if (parts.length > 0) {
+            return '/' + parts[0];
           }
           return '';
         };

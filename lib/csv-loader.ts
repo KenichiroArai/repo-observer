@@ -110,20 +110,18 @@ function getBasePath(): string {
   if (typeof window === 'undefined') return '';
 
   // URLからbasePathを取得
-  // 例: https://username.github.io/repo-name/docs/dashboard
-  // → basePath = /repo-name/docs
+  // GitHub Pagesで /docs フォルダを公開する場合:
+  // URL: https://username.github.io/repo-name/
+  // docs/ フォルダの内容がルートとして公開される
+  // Next.jsのbasePathは /repo-name に設定されている
+  // したがって、basePathは /repo-name を返す（/docs は含めない）
   const pathname = window.location.pathname;
   const parts = pathname.split('/').filter(Boolean);
 
-  // /docs が含まれている場合、その前までがbasePath
-  const docsIndex = parts.indexOf('docs');
-  if (docsIndex > 0) {
-    return '/' + parts.slice(0, docsIndex + 1).join('/');
-  }
-
-  // /docs が含まれていない場合、最初の2つのパス（ユーザー名/リポジトリ名）をbasePathとする
-  if (parts.length >= 2) {
-    return '/' + parts.slice(0, 2).join('/') + '/docs';
+  // リポジトリ名（最初のパスセグメント）を取得
+  // 例: /repo-observer/dashboard → basePath = /repo-observer
+  if (parts.length > 0) {
+    return '/' + parts[0];
   }
 
   return '';

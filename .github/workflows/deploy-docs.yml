@@ -5,7 +5,15 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'next.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'tailwind.config.ts'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -30,30 +38,29 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: docs/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: docs
         run: npm ci
 
       - name: Copy data files to public
         run: |
-          mkdir -p docs/public/data docs/public/manual
-          cp -r docs/data/* docs/public/data/ || true
-          cp -r docs/manual/* docs/public/manual/ || true
-          cp ../README.md docs/public/README.md || true
+          mkdir -p public/data public/manual
+          cp -r docs/data/* public/data/ || true
+          cp -r manual/* public/manual/ || true
+          cp README.md public/README.md || true
 
       - name: Build Next.js app
-        working-directory: docs
         run: npm run build
         env:
           NODE_ENV: production
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Copy build output to docs root
+      - name: Copy build output to docs directory
         run: |
-          # docs/out の内容を docs/ にコピー（既存ファイルは上書き）
-          cp -r docs/out/* docs/ || true
+          # out の内容を docs/ にコピー（既存ファイルは上書き）
+          mkdir -p docs
+          cp -r out/* docs/ || true
           # .nojekyll ファイルを追加（Jekyllを無効化）
           touch docs/.nojekyll
 

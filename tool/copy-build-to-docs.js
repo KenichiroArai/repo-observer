@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// docs/out の内容を docs/ にコピーするスクリプト
+// out の内容を docs/ にコピーするスクリプト
 const outDir = path.join(__dirname, '..', 'out');
-const docsDir = path.join(__dirname, '..');
+const docsDir = path.join(__dirname, '..', 'docs');
 
 function copyRecursive(src, dest) {
   if (!fs.existsSync(src)) {

@@ -1,5 +1,7 @@
 # Node.js
 node_modules/
+/.pnp
+.pnp.js
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -7,24 +9,37 @@ yarn-error.log*
 # TypeScript
 dist/
 *.tsbuildinfo
+next-env.d.ts
 
-# 出力ファイル
+# プロジェクト固有の出力ファイル
 scripts/output/
 scripts/*.csv
 
 # docs/data/配下のCSVファイルは階層を問わず追跡する（例外）
 !docs/data/**/*.csv
 
-# Next.js (docs/)
+# Next.js
+.next/
+/out/
 docs/.next/
 docs/out/
+.swc/
 docs/.swc/
+build/
 docs/build/
+.next/cache/
+docs/.next/cache/
+
+# 環境変数ファイル
+.env*.local
 docs/.env*.local
+
+# Vercel
+.vercel
 docs/.vercel
 
-# Next.js キャッシュ
-docs/.next/cache/
+# テスト
+/coverage
 
 # IDE
 .vscode/
@@ -39,3 +54,5 @@ Thumbs.db
 # ログ
 *.log
 
+# その他
+*.pem

@@ -5,10 +5,12 @@
 現在、GitHub Pagesの設定で `/docs` フォルダを公開するように設定されている場合、以下のURLでアクセスできます：
 
 ```
-https://<ユーザー名>.github.io/<リポジトリ名>/docs/
+https://<ユーザー名>.github.io/<リポジトリ名>/
 ```
 
-例: `https://kenichiroarai.github.io/repo-observer/docs/`
+例: `https://kenichiroarai.github.io/repo-observer/`
+
+> **注意**: ソースコードはルートディレクトリ（`/`）に配置され、ビルド結果のみが `/docs` フォルダに配置されます。
 
 ## 自動デプロイの設定
 
@@ -22,14 +24,15 @@ https://<ユーザー名>.github.io/<リポジトリ名>/docs/
 
 `.github/workflows/deploy-docs.yml` が以下のタイミングで自動実行されます：
 
-- `docs/` フォルダ内のファイルが変更されたとき
+- ソースコード（`app/`, `components/`, `lib/`など）が変更されたとき
+- 設定ファイル（`next.config.js`, `package.json`など）が変更されたとき
 - 手動実行時（Actions タブから実行可能）
 
 ### 3. デプロイの流れ
 
-1. Next.jsアプリをビルド
-2. `docs/out` フォルダにビルド結果を出力
-3. ビルド結果を `docs/` フォルダのルートにコピー
+1. ルートディレクトリでNext.jsアプリをビルド
+2. `out` フォルダにビルド結果を出力
+3. ビルド結果を `docs/` フォルダにコピー
 4. `.nojekyll` ファイルを作成（Jekyllを無効化）
 5. GitHub Pagesにデプロイ
 
@@ -38,7 +41,7 @@ https://<ユーザー名>.github.io/<リポジトリ名>/docs/
 ローカルでビルドしてデプロイする場合：
 
 ```bash
-cd docs
+# ルートディレクトリで実行
 npm install
 npm run build
 npm run deploy
@@ -51,6 +54,8 @@ git add docs/
 git commit -m "Update docs"
 git push
 ```
+
+> **注意**: ソースコードはコミット対象に含めないでください。`docs/` フォルダのみをコミットします。
 
 ## トラブルシューティング
 
@@ -75,8 +80,23 @@ git push
 デプロイが成功したら、以下のURLでサイトにアクセスできます：
 
 ```
-https://<ユーザー名>.github.io/<リポジトリ名>/docs/
+https://<ユーザー名>.github.io/<リポジトリ名>/
 ```
 
 または、リポジトリの Settings → Pages に表示されているURLを使用してください。
+
+## プロジェクト構造
+
+```
+repo-observer/
+├── app/              # Next.js App Router のソースコード
+├── components/       # React コンポーネント
+├── lib/             # ユーティリティ関数
+├── public/          # 静的ファイル（CSV、Markdown等）
+├── docs/            # ビルド結果（デプロイ用、Git管理対象）
+│   ├── index.html
+│   └── ...
+├── out/             # ビルド出力（一時的、.gitignore対象）
+└── tool/            # ビルドスクリプト
+```
 

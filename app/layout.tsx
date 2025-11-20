@@ -1,10 +1,22 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import XShareButton from "@/components/XShareButton";
 
 export const metadata: Metadata = {
   title: "Repo Observer - リポジトリ可視化ダッシュボード",
   description: "GitHubリポジトリの活動状況を可視化するダッシュボード",
+  openGraph: {
+    title: "Repo Observer - リポジトリ可視化ダッシュボード",
+    description: "GitHubリポジトリの活動状況を可視化するダッシュボード",
+    type: "website",
+    siteName: "Repo Observer",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Repo Observer - リポジトリ可視化ダッシュボード",
+    description: "GitHubリポジトリの活動状況を可視化するダッシュボード",
+  },
 };
 
 export default function RootLayout({
@@ -50,6 +62,9 @@ export default function RootLayout({
                     ドキュメント
                   </Link>
                 </div>
+              </div>
+              <div className="flex items-center">
+                <XShareButton />
               </div>
             </div>
           </div>

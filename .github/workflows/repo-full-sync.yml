@@ -148,13 +148,13 @@ jobs:
 
       - name: CSV出力ディレクトリを作成
         run: |
-          mkdir -p docs/data
+          mkdir -p public/data
 
       - name: CSV出力を実行
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
-          OUTPUT_PATH: ../docs/data/repositories.csv
+          OUTPUT_PATH: ../public/data/repositories.csv
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
           EXPORT_SUMMARY: ${{ github.event.inputs.export_summary || 'true' }}
@@ -165,34 +165,34 @@ jobs:
       - name: CSV出力後のディレクトリ構造を確認
         run: |
           echo "=== CSV出力後の構造確認 ==="
-          echo "docs/data の構造:"
-          ls -la docs/data/ || echo "docs/data が見つかりません"
+          echo "public/data の構造:"
+          ls -la public/data/ || echo "public/data が見つかりません"
           echo ""
-          echo "docs/data/repositories の構造:"
-          if [ -d "docs/data/repositories" ]; then
-            ls -la docs/data/repositories/ || echo "docs/data/repositories は空です"
+          echo "public/data/repositories の構造:"
+          if [ -d "public/data/repositories" ]; then
+            ls -la public/data/repositories/ || echo "public/data/repositories は空です"
             echo ""
             echo "CSVファイル一覧:"
-            find docs/data/repositories -type f -name "*.csv" | head -10
+            find public/data/repositories -type f -name "*.csv" | head -10
           else
-            echo "❌ docs/data/repositories ディレクトリが見つかりません"
+            echo "❌ public/data/repositories ディレクトリが見つかりません"
             echo ""
-            echo "docs/data 配下の全ファイル:"
-            find docs/data -type f | head -20
+            echo "public/data 配下の全ファイル:"
+            find public/data -type f | head -20
           fi
 
       - name: Issue同期用CSVを共有
         uses: actions/upload-artifact@v4
         with:
           name: latest-repositories-csv
-          path: docs/data/repositories/
+          path: public/data/repositories/
           if-no-files-found: error
           retention-days: 1
 
       - name: 最新CSVファイルを収集
         id: collect_csv
         run: |
-          git status -s -- docs/data > /tmp/csv_changes.txt
+          git status -s -- public/data > /tmp/csv_changes.txt
           if [ ! -s /tmp/csv_changes.txt ]; then
             echo "paths=" >> $GITHUB_OUTPUT
             echo "変更されたCSVファイルはありません。"
@@ -220,7 +220,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/data
+          git add public/data
 
           # 変更があればコミット
           if git diff --staged --quiet; then
@@ -278,7 +278,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: latest-repositories-csv
-          path: docs/data
+          path: public/data
           merge-multiple: false
 
       - name: CSVディレクトリ構造を確認
@@ -286,20 +286,20 @@ jobs:
           echo "=== 現在のディレクトリ ==="
           pwd
           echo ""
-          echo "=== docs/data の構造 ==="
-          ls -la docs/data/ || echo "docs/data が見つかりません"
+          echo "=== public/data の構造 ==="
+          ls -la public/data/ || echo "public/data が見つかりません"
           echo ""
-          echo "=== docs/data/repositories の構造 ==="
-          if [ -d "docs/data/repositories" ]; then
-            ls -la docs/data/repositories/ || echo "docs/data/repositories は空です"
+          echo "=== public/data/repositories の構造 ==="
+          if [ -d "public/data/repositories" ]; then
+            ls -la public/data/repositories/ || echo "public/data/repositories は空です"
             echo ""
             echo "=== CSVファイル一覧 ==="
-            find docs/data/repositories -type f -name "*.csv" | head -10
+            find public/data/repositories -type f -name "*.csv" | head -10
           else
-            echo "docs/data/repositories ディレクトリが見つかりません"
+            echo "public/data/repositories ディレクトリが見つかりません"
             echo ""
-            echo "=== docs/data 配下の全ファイル ==="
-            find docs/data -type f | head -20
+            echo "=== public/data 配下の全ファイル ==="
+            find public/data -type f | head -20
           fi
 
       - name: Issue同期を実行
@@ -311,20 +311,20 @@ jobs:
           PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
-          CSV_INPUT_PATH: ../docs/data/repositories
+          CSV_INPUT_PATH: ../public/data/repositories
         run: |
           cd scripts
           echo "=== CSV_INPUT_PATH の確認 ==="
           echo "CSV_INPUT_PATH: $CSV_INPUT_PATH"
           echo "現在のディレクトリ: $(pwd)"
-          echo "解決後のパス: $(cd .. && pwd)/docs/data/repositories.csv"
-          if [ -d "../docs/data/repositories" ]; then
-            echo "✅ ../docs/data/repositories ディレクトリが存在します"
-            find ../docs/data/repositories -type f -name "*.csv" | head -5
+          echo "解決後のパス: $(cd .. && pwd)/public/data/repositories"
+          if [ -d "../public/data/repositories" ]; then
+            echo "✅ ../public/data/repositories ディレクトリが存在します"
+            find ../public/data/repositories -type f -name "*.csv" | head -5
           else
-            echo "❌ ../docs/data/repositories ディレクトリが見つかりません"
+            echo "❌ ../public/data/repositories ディレクトリが見つかりません"
             echo "=== 代替パスの確認 ==="
-            ls -la ../docs/data/ || echo "../docs/data が見つかりません"
+            ls -la ../public/data/ || echo "../public/data が見つかりません"
           fi
           echo ""
           node dist/index.js sync-issues

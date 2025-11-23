@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { loadLatestSummary } from '@/lib/csv-loader';
-import { RepositorySummary } from '@/lib/csv-loader';
-import StatusChart from '@/components/StatusChart';
-import LanguageChart from '@/components/LanguageChart';
+import { loadLatestSummary } from '../../lib/csv-loader';
+import { RepositorySummary } from '../../lib/csv-loader';
+import StatusChart from '../../components/StatusChart';
+import LanguageChart from '../../components/LanguageChart';
 
 export default function Home() {
   const [data, setData] = useState<RepositorySummary[]>([]);

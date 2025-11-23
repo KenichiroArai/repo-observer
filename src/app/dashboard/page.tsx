@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { loadLatestRepositories } from '@/lib/csv-loader';
-import { RepositoryData } from '@/lib/csv-loader';
-import StatusChart from '@/components/StatusChart';
-import LanguageChart from '@/components/LanguageChart';
-import ActivityChart from '@/components/ActivityChart';
+import { loadLatestRepositories } from '../../../lib/csv-loader';
+import { RepositoryData } from '../../../lib/csv-loader';
+import StatusChart from '../../../components/StatusChart';
+import LanguageChart from '../../../components/LanguageChart';
+import ActivityChart from '../../../components/ActivityChart';
 
 export default function DashboardPage() {
   const [data, setData] = useState<RepositoryData[]>([]);

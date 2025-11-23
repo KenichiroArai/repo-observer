@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
-import XShareButton from "@/components/XShareButton";
+import XShareButton from "../../components/XShareButton";
 
 export const metadata: Metadata = {
   title: "Repo Observer - リポジトリ可視化ダッシュボード",

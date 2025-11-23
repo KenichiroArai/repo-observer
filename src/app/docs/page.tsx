@@ -21,14 +21,23 @@ export default function DocsPage() {
         // したがって、basePathは /repo-name を返す（/docs は含めない）
         const getBasePath = () => {
           if (typeof window === 'undefined') return '';
+
+          // 開発環境（localhost）ではbasePathは空文字列
+          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return '';
+          }
+
+          // 本番環境（GitHub Pages）では、URLからbasePathを取得
           const pathname = window.location.pathname;
           const parts = pathname.split('/').filter(Boolean);
 
           // リポジトリ名（最初のパスセグメント）を取得
           // 例: /repo-observer/docs → basePath = /repo-observer
-          if (parts.length > 0) {
+          // ただし、/docs のような場合は空文字列を返す（開発環境の可能性）
+          if (parts.length > 0 && parts[0] !== 'docs' && parts[0] !== 'dashboard' && parts[0] !== 'top' && parts[0] !== 'documents') {
             return '/' + parts[0];
           }
+
           return '';
         };
 

@@ -5,16 +5,14 @@ on:
     branches:
       - main
     paths:
-      - 'app/**'
-      - 'components/**'
-      - 'lib/**'
-      - 'public/**'
-      - 'next.config.js'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - 'tailwind.config.ts'
-      - '.github/workflows/deploy-docs.yml'
+      - "src/**"
+      - "public/**"
+      - "next.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "tailwind.config.ts"
+      - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -36,19 +34,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Copy data files to public
+      - name: Copy data files to public (if needed)
         run: |
           mkdir -p public/data public/manual
-          cp -r docs/data/* public/data/ || true
-          cp -r manual/* public/manual/ || true
-          cp README.md public/README.md || true
+          # docs/data/に既存データがある場合はpublic/data/にコピー
+          if [ -d "docs/data" ]; then
+            cp -r docs/data/* public/data/ 2>/dev/null || true
+          fi
+          if [ -d "manual" ]; then
+            cp -r manual/* public/manual/ 2>/dev/null || true
+          fi
+          if [ -f "README.md" ]; then
+            cp README.md public/README.md 2>/dev/null || true
+          fi
 
       - name: Build Next.js app
         run: npm run build
@@ -56,12 +61,8 @@ jobs:
           NODE_ENV: production
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Copy build output to docs directory
+      - name: Ensure .nojekyll file exists
         run: |
-          # out の内容を docs/ にコピー（既存ファイルは上書き）
-          mkdir -p docs
-          cp -r out/* docs/ || true
-          # .nojekyll ファイルを追加（Jekyllを無効化）
           touch docs/.nojekyll
 
       - name: Setup Pages
@@ -82,4 +83,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

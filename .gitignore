@@ -15,20 +15,23 @@ next-env.d.ts
 scripts/output/
 scripts/*.csv
 
-# docs/data/配下のCSVファイルは階層を問わず追跡する（例外）
-!docs/data/**/*.csv
-
 # Next.js
 .next/
 /out/
-docs/.next/
-docs/out/
 .swc/
-docs/.swc/
 build/
-docs/build/
 .next/cache/
-docs/.next/cache/
+
+# docs/ ディレクトリ（GitHub Pages出力）
+# distDir: 'docs' により、ビルド出力が直接 docs/ に生成される
+# ただし docs/data/ と docs/.nojekyll は追跡対象
+docs/*
+!docs/.nojekyll
+# docs/data/ は元データとして保持（ビルド時には public/data/ から自動コピーされる）
+!docs/data/
+docs/data/**
+!docs/data/**/*.csv
+!docs/data/**/*.md
 
 # 環境変数ファイル
 .env*.local

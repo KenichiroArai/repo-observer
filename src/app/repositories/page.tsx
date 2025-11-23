@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { loadLatestRepositories } from '@/lib/csv-loader';
-import { RepositoryData } from '@/lib/csv-loader';
+import { loadLatestRepositories } from '../../../lib/csv-loader';
+import { RepositoryData } from '../../../lib/csv-loader';
 
 export default function RepositoriesPage() {
   const [data, setData] = useState<RepositoryData[]>([]);

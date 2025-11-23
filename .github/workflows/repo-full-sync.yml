@@ -162,6 +162,25 @@ jobs:
           cd scripts
           node dist/index.js export-csv
 
+      - name: CSV出力後のディレクトリ構造を確認
+        run: |
+          echo "=== CSV出力後の構造確認 ==="
+          echo "docs/data の構造:"
+          ls -la docs/data/ || echo "docs/data が見つかりません"
+          echo ""
+          echo "docs/data/repositories の構造:"
+          if [ -d "docs/data/repositories" ]; then
+            ls -la docs/data/repositories/ || echo "docs/data/repositories は空です"
+            echo ""
+            echo "CSVファイル一覧:"
+            find docs/data/repositories -type f -name "*.csv" | head -10
+          else
+            echo "❌ docs/data/repositories ディレクトリが見つかりません"
+            echo ""
+            echo "docs/data 配下の全ファイル:"
+            find docs/data -type f | head -20
+          fi
+
       - name: Issue同期用CSVを共有
         uses: actions/upload-artifact@v4
         with:
@@ -292,7 +311,7 @@ jobs:
           PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
-          CSV_INPUT_PATH: ../docs/data/repositories.csv
+          CSV_INPUT_PATH: ../docs/data/repositories
         run: |
           cd scripts
           echo "=== CSV_INPUT_PATH の確認 ==="

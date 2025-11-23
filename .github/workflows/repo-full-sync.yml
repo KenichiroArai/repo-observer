@@ -166,7 +166,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: latest-repositories-csv
-          path: docs/data/repositories
+          path: docs/data/repositories/
           if-no-files-found: error
           retention-days: 1
 
@@ -260,6 +260,28 @@ jobs:
         with:
           name: latest-repositories-csv
           path: docs/data
+          merge-multiple: false
+
+      - name: CSVディレクトリ構造を確認
+        run: |
+          echo "=== 現在のディレクトリ ==="
+          pwd
+          echo ""
+          echo "=== docs/data の構造 ==="
+          ls -la docs/data/ || echo "docs/data が見つかりません"
+          echo ""
+          echo "=== docs/data/repositories の構造 ==="
+          if [ -d "docs/data/repositories" ]; then
+            ls -la docs/data/repositories/ || echo "docs/data/repositories は空です"
+            echo ""
+            echo "=== CSVファイル一覧 ==="
+            find docs/data/repositories -type f -name "*.csv" | head -10
+          else
+            echo "docs/data/repositories ディレクトリが見つかりません"
+            echo ""
+            echo "=== docs/data 配下の全ファイル ==="
+            find docs/data -type f | head -20
+          fi
 
       - name: Issue同期を実行
         env:
@@ -273,6 +295,19 @@ jobs:
           CSV_INPUT_PATH: ../docs/data/repositories.csv
         run: |
           cd scripts
+          echo "=== CSV_INPUT_PATH の確認 ==="
+          echo "CSV_INPUT_PATH: $CSV_INPUT_PATH"
+          echo "現在のディレクトリ: $(pwd)"
+          echo "解決後のパス: $(cd .. && pwd)/docs/data/repositories.csv"
+          if [ -d "../docs/data/repositories" ]; then
+            echo "✅ ../docs/data/repositories ディレクトリが存在します"
+            find ../docs/data/repositories -type f -name "*.csv" | head -5
+          else
+            echo "❌ ../docs/data/repositories ディレクトリが見つかりません"
+            echo "=== 代替パスの確認 ==="
+            ls -la ../docs/data/ || echo "../docs/data が見つかりません"
+          fi
+          echo ""
           node dist/index.js sync-issues
 
   # ステップ4: 完了通知

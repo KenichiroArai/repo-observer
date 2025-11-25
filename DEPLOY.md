@@ -4,7 +4,7 @@
 
 現在、GitHub Pagesの設定で `/docs` フォルダを公開するように設定されている場合、以下のURLでアクセスできます：
 
-```
+```text
 https://<ユーザー名>.github.io/<リポジトリ名>/
 ```
 
@@ -79,7 +79,7 @@ git push
 
 デプロイが成功したら、以下のURLでサイトにアクセスできます：
 
-```
+```text
 https://<ユーザー名>.github.io/<リポジトリ名>/
 ```
 
@@ -87,7 +87,7 @@ https://<ユーザー名>.github.io/<リポジトリ名>/
 
 ## プロジェクト構造
 
-```
+```plaintext
 repo-observer/
 ├── app/              # Next.js App Router のソースコード
 ├── components/       # React コンポーネント
@@ -99,4 +99,3 @@ repo-observer/
 ├── out/             # ビルド出力（一時的、.gitignore対象）
 └── tool/            # ビルドスクリプト
 ```
-

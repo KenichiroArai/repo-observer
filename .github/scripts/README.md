@@ -4,7 +4,7 @@
 
 ## 📁 ディレクトリ構成
 
-```
+```text
 .github/scripts/
 └── repo-full-sync/     # repo-full-syncワークフロー専用スクリプト
     ├── src/            # TypeScriptソースコード
@@ -25,4 +25,3 @@
 各スクリプトの詳細については、それぞれのサブディレクトリ内のREADMEを参照してください：
 
 - [repo-full-sync スクリプト](./repo-full-sync/README.md)
-

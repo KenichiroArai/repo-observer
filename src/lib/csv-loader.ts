@@ -109,7 +109,13 @@ function mapRow(row: any, headerMap: Record<string, string>): any {
 function getBasePath(): string {
   if (typeof window === 'undefined') return '';
 
-  // URLからbasePathを取得
+  // 開発環境（localhost）ではbasePathは空文字列
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+    return '';
+  }
+
+  // 本番環境（GitHub Pages）ではURLからbasePathを取得
   // GitHub Pagesで /docs フォルダを公開する場合:
   // URL: https://username.github.io/repo-name/
   // docs/ フォルダの内容がルートとして公開される
@@ -127,12 +133,46 @@ function getBasePath(): string {
   return '';
 }
 
+async function findLatestCsvFile(basePath: string, type: 'repositories' | 'repositories-summary'): Promise<string | null> {
+  // 現在の日付から過去に向かって最大30日間試行
+  const now = new Date();
+  for (let i = 0; i < 30; i++) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    const filename = type === 'repositories'
+      ? `repositories-${dateStr}.csv`
+      : `repositories-summary-${dateStr}.csv`;
+    const url = `${basePath}/data/${type}/${year}/${month}/${filename}`;
+
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      if (response.ok) {
+        return url;
+      }
+    } catch (error) {
+      // 次の日付を試行
+      continue;
+    }
+  }
+  return null;
+}
+
 export async function loadLatestRepositories(): Promise<RepositoryData[]> {
   try {
     const basePath = getBasePath();
 
     // 最新のCSVファイルを探す
-    const response = await fetch(`${basePath}/data/repositories/2025/11/repositories-2025-11-17.csv`);
+    const csvUrl = await findLatestCsvFile(basePath, 'repositories');
+    if (!csvUrl) {
+      throw new Error('利用可能なCSVファイルが見つかりませんでした');
+    }
+
+    const response = await fetch(csvUrl);
     if (!response.ok) {
       throw new Error('CSVファイルの読み込みに失敗しました');
     }
@@ -180,7 +220,13 @@ export async function loadLatestSummary(): Promise<RepositorySummary[]> {
   try {
     const basePath = getBasePath();
 
-    const response = await fetch(`${basePath}/data/repositories-summary/2025/11/repositories-summary-2025-11-17.csv`);
+    // 最新のCSVファイルを探す
+    const csvUrl = await findLatestCsvFile(basePath, 'repositories-summary');
+    if (!csvUrl) {
+      throw new Error('利用可能なCSVファイルが見つかりませんでした');
+    }
+
+    const response = await fetch(csvUrl);
     if (!response.ok) {
       throw new Error('CSVファイルの読み込みに失敗しました');
     }

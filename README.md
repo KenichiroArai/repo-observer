@@ -149,12 +149,13 @@ repo-observer/
 ├── .github/workflows/
 │   ├── repo-full-sync.yml           # リポジトリ情報同期ワークフロー
 │   └── deploy-docs.yml               # GitHub Pagesデプロイワークフロー
-├── app/                              # Next.js App Router のソースコード
-│   ├── dashboard/                    # ダッシュボードページ
-│   ├── repositories/                 # リポジトリ一覧ページ
-│   └── ...
-├── components/                       # React コンポーネント
-├── lib/                              # ユーティリティ関数
+├── src/                              # ソースコード（Next.js 13+ App Router）
+│   ├── app/                          # ページとレイアウト
+│   │   ├── dashboard/                # ダッシュボードページ
+│   │   ├── repositories/             # リポジトリ一覧ページ
+│   │   └── ...
+│   ├── components/                   # React コンポーネント
+│   └── lib/                          # ユーティリティ関数
 ├── public/                           # 静的ファイル（CSV、Markdown等）
 ├── .github/workflows/repo-full-sync/ # ワークフロー関連ファイル
 │   ├── scripts/                      # TypeScript/Node.jsスクリプト

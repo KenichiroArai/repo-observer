@@ -70,6 +70,7 @@ repo-observer/
 
 ## 📝 変更履歴
 
+- 2025-11-25: `components/`, `lib/` を `src/` 配下に移動（一般的なNext.js構成に統一）
 - 2025-11-23: `app/`, `components/`, `lib/` を `src/` 配下に移動
 - `distDir: 'docs'` を設定してビルド出力を直接 `docs/` に生成
 - `copy-build-to-docs.js` は不要になったため削除

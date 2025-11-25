@@ -4,7 +4,7 @@
 
 ## 📁 ディレクトリ構成
 
-```
+```text
 repo-observer/
 ├─ src/                    # ソースコード（Next.js 13+ App Router）
 │  ├─ app/                 # ページとレイアウト
@@ -31,29 +31,36 @@ repo-observer/
 ## 🔧 重要な設定
 
 ### 1. `next.config.js`
+
 - `distDir: 'docs'` - ビルド出力を直接 `docs/` に生成
 - `output: 'export'` - 静的HTMLを生成
 - `basePath` - GitHub Pages用のベースパス
 
 ### 2. `tsconfig.json`
+
 - `paths: { "@/*": ["./src/*"] }` - インポートエイリアス設定
 
 ### 3. `package.json`
+
 - `npm run build` - ビルドを実行（出力先: `docs/`）
 - `npm run dev` - 開発サーバー起動
 
 ## 📦 ビルドプロセス
 
 1. **開発時**
+
    ```bash
    npm run dev
    ```
+
    - 開発サーバーが起動（`localhost:3000`）
 
 2. **ビルド時**
+
    ```bash
    npm run build
    ```
+
    - `src/` 配下のコードをコンパイル
    - `public/` 配下のファイルを `docs/` にコピー
    - 静的HTMLを `docs/` に生成

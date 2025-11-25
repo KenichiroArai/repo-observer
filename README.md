@@ -156,11 +156,13 @@ repo-observer/
 ├── components/                       # React コンポーネント
 ├── lib/                              # ユーティリティ関数
 ├── public/                           # 静的ファイル（CSV、Markdown等）
-├── scripts/                          # TypeScript/Node.jsスクリプト
-│   ├── src/                          # ソースコード
-│   │   ├── exporters/                # CSV/Issue出力モジュール
-│   │   └── ...                       # その他のモジュール
-│   └── README.md                     # スクリプト詳細仕様
+├── .github/workflows/repo-full-sync/ # ワークフロー関連ファイル
+│   ├── scripts/                      # TypeScript/Node.jsスクリプト
+│   │   ├── src/                      # ソースコード
+│   │   │   ├── exporters/            # CSV/Issue出力モジュール
+│   │   │   └── ...                   # その他のモジュール
+│   │   └── README.md                 # スクリプト詳細仕様
+│   └── README.md                     # ワークフロー関連ファイルの説明
 ├── docs/                             # ビルド結果（GitHub Pagesデプロイ用）
 │   └── data/                         # CSVデータ（ワークフローで生成）
 ├── manual/                           # ドキュメント
@@ -184,7 +186,7 @@ repo-formatter (データ整形)
     └→ issue-exporter → GitHub Issues + Projects
 ```
 
-詳細な技術仕様については [scripts/README.md](scripts/README.md) を参照してください。
+詳細な技術仕様については [.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md) を参照してください。
 
 ## 🎯 想定される使用例
 
@@ -226,13 +228,13 @@ GitHub Actions以外に、ローカル環境でスクリプトを直接実行す
 - **スクリプト**: TypeScript + Node.js + Octokit
 - **API**: GitHub REST API + GraphQL API
 
-詳細な技術仕様については [scripts/README.md](scripts/README.md) を参照してください。
+詳細な技術仕様については [.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md) を参照してください。
 
 ## 📚 関連ドキュメント
 
 - **[manual/構想.md](manual/構想.md)** - プロジェクトの構想と背景
 - **[manual/ワークフロー同期制御.md](manual/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
-- **[scripts/README.md](scripts/README.md)** - スクリプトの技術仕様とローカル実行方法
+- **[.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md)** - スクリプトの技術仕様とローカル実行方法
 - **[DEPLOY.md](DEPLOY.md)** - GitHub Pagesデプロイガイド
 
 ## 📝 ライセンス

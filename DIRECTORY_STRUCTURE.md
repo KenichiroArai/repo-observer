@@ -19,7 +19,7 @@ repo-observer/
 │  ├─ data/                # ビルド時に public/data/ からコピーされる
 │  └─ .nojekyll            # Jekyll無効化ファイル
 │
-├─ scripts/                # データ取得スクリプト
+├─ .github/workflows/repo-full-sync/scripts/  # データ取得スクリプト（ワークフロー専用）
 ├─ tool/                   # ビルドツール（現在は未使用）
 ├─ manual/                 # マニュアルドキュメント（ソース）
 │

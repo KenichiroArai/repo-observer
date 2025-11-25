@@ -90,16 +90,16 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: scripts/package.json
+          cache-dependency-path: .github/scripts/repo-full-sync/package.json
 
       - name: 依存関係をインストール
         run: |
-          cd scripts
+          cd .github/scripts/repo-full-sync
           npm ci
 
       - name: TypeScriptをビルド
         run: |
-          cd scripts
+          cd .github/scripts/repo-full-sync
           npm run build
 
       - name: リポジトリ情報を取得
@@ -108,7 +108,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_USER: ${{ github.event.inputs.target_user }}
         run: |
-          cd scripts
+          cd .github/scripts/repo-full-sync
           # ここでは情報取得のみ実行し、後続ジョブで再利用
           echo "count=0" >> $GITHUB_OUTPUT
           echo "✅ 依存関係の準備が完了しました"
@@ -119,9 +119,9 @@ jobs:
         with:
           name: built-scripts
           path: |
-            scripts/dist/
-            scripts/node_modules/
-            scripts/package.json
+            .github/scripts/repo-full-sync/dist/
+            .github/scripts/repo-full-sync/node_modules/
+            .github/scripts/repo-full-sync/package.json
           retention-days: 1
 
   # ステップ2: CSV出力（並列実行可能だが、順次実行で安全性確保）
@@ -144,7 +144,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: built-scripts
-          path: scripts/
+          path: .github/scripts/repo-full-sync/
 
       - name: CSV出力ディレクトリを作成
         run: |
@@ -154,12 +154,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
-          OUTPUT_PATH: ../public/data/repositories.csv
+          OUTPUT_PATH: ../../../public/data/repositories.csv
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
           EXPORT_SUMMARY: ${{ github.event.inputs.export_summary || 'true' }}
         run: |
-          cd scripts
+          cd .github/scripts/repo-full-sync
           node dist/index.js export-csv
 
       - name: CSV出力後のディレクトリ構造を確認
@@ -272,7 +272,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: built-scripts
-          path: scripts/
+          path: .github/scripts/repo-full-sync/
 
       - name: CSVデータを取得
         uses: actions/download-artifact@v4
@@ -311,20 +311,20 @@ jobs:
           PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
           INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
           INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
-          CSV_INPUT_PATH: ../public/data/repositories
+          CSV_INPUT_PATH: ../../../public/data/repositories
         run: |
-          cd scripts
+          cd .github/scripts/repo-full-sync
           echo "=== CSV_INPUT_PATH の確認 ==="
           echo "CSV_INPUT_PATH: $CSV_INPUT_PATH"
           echo "現在のディレクトリ: $(pwd)"
-          echo "解決後のパス: $(cd .. && pwd)/public/data/repositories"
-          if [ -d "../public/data/repositories" ]; then
-            echo "✅ ../public/data/repositories ディレクトリが存在します"
-            find ../public/data/repositories -type f -name "*.csv" | head -5
+          echo "解決後のパス: $(cd ../../../ && pwd)/public/data/repositories"
+          if [ -d "../../../public/data/repositories" ]; then
+            echo "✅ ../../../public/data/repositories ディレクトリが存在します"
+            find ../../../public/data/repositories -type f -name "*.csv" | head -5
           else
-            echo "❌ ../public/data/repositories ディレクトリが見つかりません"
+            echo "❌ ../../../public/data/repositories ディレクトリが見つかりません"
             echo "=== 代替パスの確認 ==="
-            ls -la ../public/data/ || echo "../public/data が見つかりません"
+            ls -la ../../../public/data/ || echo "public/data が見つかりません"
           fi
           echo ""
           node dist/index.js sync-issues

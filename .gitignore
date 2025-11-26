@@ -24,14 +24,19 @@ build/
 
 # docs/ ディレクトリ（GitHub Pages出力）
 # distDir: 'docs' により、ビルド出力が直接 docs/ に生成される
-# ただし docs/data/ と docs/.nojekyll は追跡対象
+# ただし docs/data/、docs/manual/、docs/.nojekyll は追跡対象
 docs/*
 !docs/.nojekyll
-# docs/data/ は元データとして保持（ビルド時には public/data/ から自動コピーされる）
+# docs/data/ は元データとして保持
 !docs/data/
 docs/data/**
 !docs/data/**/*.csv
 !docs/data/**/*.md
+# docs/manual/ はドキュメントとして保持
+!docs/manual/
+docs/manual/**
+!docs/manual/**/*.md
+!docs/manual/LICENSE
 
 # 環境変数ファイル
 .env*.local

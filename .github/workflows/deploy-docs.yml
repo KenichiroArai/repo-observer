@@ -6,7 +6,8 @@ on:
       - main
     paths:
       - "src/**"
-      - "public/**"
+      - "docs/data/**"
+      - "docs/manual/**"
       - "next.config.js"
       - "package.json"
       - "package-lock.json"
@@ -41,19 +42,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Copy data files to public (if needed)
+      - name: Ensure docs directory structure exists
         run: |
-          mkdir -p public/data public/manual
-          # docs/data/に既存データがある場合はpublic/data/にコピー
-          if [ -d "docs/data" ]; then
-            cp -r docs/data/* public/data/ 2>/dev/null || true
-          fi
-          if [ -d "manual" ]; then
-            cp -r manual/* public/manual/ 2>/dev/null || true
-          fi
-          if [ -f "README.md" ]; then
-            cp README.md public/README.md 2>/dev/null || true
-          fi
+          # docs/data/とdocs/manual/が存在することを確認
+          mkdir -p docs/data docs/manual
 
       - name: Build Next.js app
         run: npm run build

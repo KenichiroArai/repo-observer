@@ -30,7 +30,7 @@ GitHubリポジトリの活動状況を自動的に監視・管理し、GitHub P
 - **日時情報**: 作成日、最終更新日、最終Push日、最新リリース
 - **状態・設定**: アーカイブ状態、公開状態、デフォルトブランチ、Issues/Wiki/Projects有効状態
 
-詳細なプロジェクト構想については [manual/構想.md](manual/構想.md) を参照してください。
+詳細なプロジェクト構想については [docs/manual/構想.md](docs/manual/構想.md) を参照してください。
 
 ## 🚀 使い方
 
@@ -124,7 +124,7 @@ npm run build
 - ワークフローは `docs/data` ディレクトリ全体をコミット対象とし、日付フォルダ単位の新規ファイルも確実に追跡します。
 - Artifactには実行中に更新・追加された最新のCSVファイル（標準出力とサマリーの両方）が添付されるため、不要な過去ファイルを繰り返しアップロードしません。
 
-詳細なワークフロー仕様については [manual/ワークフロー同期制御.md](manual/ワークフロー同期制御.md) を参照してください。
+詳細なワークフロー仕様については [docs/manual/ワークフロー同期制御.md](docs/manual/ワークフロー同期制御.md) を参照してください。
 
 ## 📊 ステータス判定ロジック
 
@@ -156,7 +156,6 @@ repo-observer/
 │   │   └── ...
 │   ├── components/                   # React コンポーネント
 │   └── lib/                          # ユーティリティ関数
-├── public/                           # 静的ファイル（CSV、Markdown等）
 ├── .github/workflows/repo-full-sync/ # ワークフロー関連ファイル
 │   ├── scripts/                      # TypeScript/Node.jsスクリプト
 │   │   ├── src/                      # ソースコード
@@ -165,10 +164,14 @@ repo-observer/
 │   │   └── README.md                 # スクリプト詳細仕様
 │   └── README.md                     # ワークフロー関連ファイルの説明
 ├── docs/                             # ビルド結果（GitHub Pagesデプロイ用）
-│   └── data/                         # CSVデータ（ワークフローで生成）
-├── manual/                           # ドキュメント
-│   ├── 構想.md                       # プロジェクトの構想
-│   └── ワークフロー同期制御.md       # ワークフロー詳細仕様
+│   ├── data/                         # CSVデータ（ワークフローで生成）
+│   ├── manual/                       # ドキュメント
+│   │   ├── 構想.md                   # プロジェクトの構想
+│   │   ├── ワークフロー同期制御.md   # ワークフロー詳細仕様
+│   │   ├── DEPLOY.md                 # GitHub Pagesデプロイガイド
+│   │   ├── DIRECTORY_STRUCTURE.md    # ディレクトリ構成の説明
+│   │   └── LICENSE                   # ライセンス
+│   └── README.md                     # プロジェクト説明
 └── README.md                         # このファイル
 ```
 
@@ -233,14 +236,14 @@ GitHub Actions以外に、ローカル環境でスクリプトを直接実行す
 
 ## 📚 関連ドキュメント
 
-- **[manual/構想.md](manual/構想.md)** - プロジェクトの構想と背景
-- **[manual/ワークフロー同期制御.md](manual/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
+- **[docs/manual/構想.md](docs/manual/構想.md)** - プロジェクトの構想と背景
+- **[docs/manual/ワークフロー同期制御.md](docs/manual/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
 - **[.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md)** - スクリプトの技術仕様とローカル実行方法
-- **[DEPLOY.md](DEPLOY.md)** - GitHub Pagesデプロイガイド
+- **[docs/manual/DEPLOY.md](docs/manual/DEPLOY.md)** - GitHub Pagesデプロイガイド
 
 ## 📝 ライセンス
 
-このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+このプロジェクトは [MIT License](docs/manual/LICENSE) の下で公開されています。
 
 ## 🤝 コントリビューション
 

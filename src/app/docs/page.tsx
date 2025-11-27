@@ -50,23 +50,45 @@ export default function DocsPage() {
           setReadme(readmeText);
         }
 
-        // マニュアルドキュメントを読み込む
+        // マニュアルドキュメントを自動的に読み込む
+        // ビルド時に自動生成された manual-list.json からファイル一覧を取得
         const docs: { [key: string]: string } = {};
 
-        const docFiles = [
-          { key: '構想', path: '/public/manual/構想.md' },
-          { key: 'ワークフロー同期制御', path: '/public/manual/ワークフロー同期制御.md' },
-        ];
-
-        for (const doc of docFiles) {
-          try {
-            const response = await fetch(`${basePath}${doc.path}`);
-            if (response.ok) {
-              docs[doc.key] = await response.text();
-            }
-          } catch (error) {
-            console.error(`ドキュメント読み込みエラー (${doc.key}):`, error);
+        try {
+          // ビルド時に自動生成されたファイル一覧を読み込む
+          const listResponse = await fetch(`${basePath}/manual-list.json`);
+          if (!listResponse.ok) {
+            console.warn('manual-list.jsonが見つかりません。ビルド時に自動生成されます。');
+            setManualDocs(docs);
+            return;
           }
+
+          const docFiles: Array<{ key: string; path: string; filename: string }> = await listResponse.json();
+
+          // 各ファイルを並列で読み込み
+          const loadPromises = docFiles.map(async (doc) => {
+            try {
+              const response = await fetch(`${basePath}${doc.path}`);
+              if (response.ok) {
+                const content = await response.text();
+                return { key: doc.key, content };
+              }
+            } catch (error) {
+              console.error(`ドキュメント読み込みエラー (${doc.key}):`, error);
+            }
+            return null;
+          });
+
+          const results = await Promise.all(loadPromises);
+
+          // 読み込み成功したファイルのみを追加
+          for (const result of results) {
+            if (result) {
+              docs[result.key] = result.content;
+            }
+          }
+        } catch (error) {
+          console.error('manual-list.jsonの読み込みエラー:', error);
         }
 
         setManualDocs(docs);

@@ -185,14 +185,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: latest-repositories-csv
-          path: public/data/repositories/
+          path: docs/data/repositories/
           if-no-files-found: error
           retention-days: 1
 
       - name: 最新CSVファイルを収集
         id: collect_csv
         run: |
-          git status -s -- public/data > /tmp/csv_changes.txt
+          git status -s -- docs/data > /tmp/csv_changes.txt
           if [ ! -s /tmp/csv_changes.txt ]; then
             echo "paths=" >> $GITHUB_OUTPUT
             echo "変更されたCSVファイルはありません。"
@@ -220,7 +220,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add public/data
+          git add docs/data
 
           # 変更があればコミット
           if git diff --staged --quiet; then
@@ -278,7 +278,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: latest-repositories-csv
-          path: public/data
+          path: docs/data
           merge-multiple: false
 
       - name: CSVディレクトリ構造を確認
@@ -286,20 +286,20 @@ jobs:
           echo "=== 現在のディレクトリ ==="
           pwd
           echo ""
-          echo "=== public/data の構造 ==="
-          ls -la public/data/ || echo "public/data が見つかりません"
+          echo "=== docs/data の構造 ==="
+          ls -la docs/data/ || echo "docs/data が見つかりません"
           echo ""
-          echo "=== public/data/repositories の構造 ==="
-          if [ -d "public/data/repositories" ]; then
-            ls -la public/data/repositories/ || echo "public/data/repositories は空です"
+          echo "=== docs/data/repositories の構造 ==="
+          if [ -d "docs/data/repositories" ]; then
+            ls -la docs/data/repositories/ || echo "docs/data/repositories は空です"
             echo ""
             echo "=== CSVファイル一覧 ==="
-            find public/data/repositories -type f -name "*.csv" | head -10
+            find docs/data/repositories -type f -name "*.csv" | head -10
           else
-            echo "public/data/repositories ディレクトリが見つかりません"
+            echo "docs/data/repositories ディレクトリが見つかりません"
             echo ""
-            echo "=== public/data 配下の全ファイル ==="
-            find public/data -type f | head -20
+            echo "=== docs/data 配下の全ファイル ==="
+            find docs/data -type f | head -20
           fi
 
       - name: Issue同期を実行

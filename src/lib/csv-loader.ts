@@ -147,7 +147,7 @@ async function findLatestCsvFile(basePath: string, type: 'repositories' | 'repos
     const filename = type === 'repositories'
       ? `repositories-${dateStr}.csv`
       : `repositories-summary-${dateStr}.csv`;
-    const url = `${basePath}/data/${type}/${year}/${month}/${filename}`;
+    const url = `${basePath}/public/data/${type}/${year}/${month}/${filename}`;
 
     try {
       const response = await fetch(url, { method: 'HEAD' });

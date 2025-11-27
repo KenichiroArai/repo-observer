@@ -54,8 +54,8 @@ export default function DocsPage() {
         const docs: { [key: string]: string } = {};
 
         const docFiles = [
-          { key: '構想', path: '/manual/構想.md' },
-          { key: 'ワークフロー同期制御', path: '/manual/ワークフロー同期制御.md' },
+          { key: '構想', path: '/public/manual/構想.md' },
+          { key: 'ワークフロー同期制御', path: '/public/manual/ワークフロー同期制御.md' },
         ];
 
         for (const doc of docFiles) {

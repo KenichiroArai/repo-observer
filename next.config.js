@@ -5,7 +5,7 @@ const basePath = process.env.NODE_ENV === 'production' ? `/${repoName}` : '';
 
 const nextConfig = {
   output: 'export',
-  distDir: 'docs',
+  distDir: 'out',
   basePath: basePath,
   assetPrefix: basePath,
   images: {

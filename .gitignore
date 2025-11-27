@@ -22,22 +22,9 @@ scripts/*.csv
 build/
 .next/cache/
 
-# docs/ ディレクトリ（GitHub Pages出力）
-# distDir: 'docs' により、ビルド出力が直接 docs/ に生成される
-# ただし docs/data/、docs/manual/、docs/.nojekyll は追跡対象
-# docs/ 以下を基本的に無視する
+# docs/ ディレクトリ（GitHub Pagesデプロイ用）
+# フォルダ自体は残すが、配下の内容はコミット対象外
 docs/*
-
-# ただし、これらは追跡対象にする
-!docs/.nojekyll
-
-# data フォルダを再帰的に有効化
-!docs/data/
-!docs/data/**
-
-# manual フォルダを再帰的に有効化
-!docs/manual/
-!docs/manual/**
 
 
 # 環境変数ファイル

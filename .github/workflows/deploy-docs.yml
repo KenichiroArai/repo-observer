@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - "src/**"
-      - "docs/data/**"
-      - "docs/manual/**"
+      - "public/data/**"
+      - "public/manual/**"
       - "next.config.js"
       - "package.json"
       - "package-lock.json"
@@ -42,16 +42,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Ensure docs directory structure exists
-        run: |
-          # docs/data/とdocs/manual/が存在することを確認
-          mkdir -p docs/data docs/manual
-
       - name: Build Next.js app
         run: npm run build
         env:
           NODE_ENV: production
           GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Copy build output to docs directory
+        run: |
+          # outディレクトリの内容をdocsディレクトリにコピー
+          mkdir -p docs
+          cp -r out/* docs/
 
       - name: Ensure .nojekyll file exists
         run: |

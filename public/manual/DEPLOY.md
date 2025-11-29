@@ -31,10 +31,9 @@ https://<ユーザー名>.github.io/<リポジトリ名>/
 ### 3. デプロイの流れ
 
 1. ルートディレクトリでNext.jsアプリをビルド
-2. `out` フォルダにビルド結果を出力
-3. ビルド結果を `docs/` フォルダにコピー
-4. `.nojekyll` ファイルを作成（Jekyllを無効化）
-5. GitHub Pagesにデプロイ
+2. `docs/` フォルダにビルド結果を直接出力（`next.config.js` の `distDir: 'docs'` 設定により）
+3. `.nojekyll` ファイルを作成（Jekyllを無効化）
+4. GitHub Pagesにデプロイ
 
 ## 手動デプロイ
 
@@ -89,13 +88,17 @@ https://<ユーザー名>.github.io/<リポジトリ名>/
 
 ```plaintext
 repo-observer/
-├── app/              # Next.js App Router のソースコード
-├── components/       # React コンポーネント
-├── lib/             # ユーティリティ関数
-├── public/          # 静的ファイル（CSV、Markdown等）
-├── docs/            # ビルド結果（デプロイ用、Git管理対象）
+├── src/              # ソースコード（Next.js 13+ App Router）
+│   ├── app/          # ページとレイアウト
+│   ├── components/   # React コンポーネント
+│   └── lib/          # ユーティリティ関数
+├── public/           # 静的ファイル（CSV、Markdown等）
+│   ├── data/         # CSVデータ（ワークフローで生成）
+│   └── manual/       # ドキュメント
+├── docs/             # ビルド結果（デプロイ用、Git管理対象）
 │   ├── index.html
 │   └── ...
-├── out/             # ビルド出力（一時的、.gitignore対象）
-└── tool/            # ビルドスクリプト
+└── .github/          # GitHub Actions設定
+    ├── workflows/    # ワークフローファイル
+    └── scripts/      # ワークフロー用スクリプト
 ```

@@ -30,13 +30,13 @@ GitHubリポジトリの活動状況を自動的に監視・管理し、GitHub P
 - **日時情報**: 作成日、最終更新日、最終Push日、最新リリース
 - **状態・設定**: アーカイブ状態、公開状態、デフォルトブランチ、Issues/Wiki/Projects有効状態
 
-詳細なプロジェクト構想については [docs/manual/構想.md](docs/manual/構想.md) を参照してください。
+詳細なプロジェクト構想については [public/manual/構想.md](public/manual/構想.md) を参照してください。
 
 ## 🚀 使い方
 
 ### 1. リポジトリのセットアップ
 
-このリポジトリをテンプレートとして使用するか、`.github/workflows/repo-status-sync.yml` をあなたの管理用リポジトリにコピーします。
+このリポジトリをテンプレートとして使用するか、`.github/workflows/repo-full-sync.yml` をあなたの管理用リポジトリにコピーします。
 
 ### 2. シークレットの設定（オプション）
 
@@ -77,7 +77,7 @@ Project連動を使用する場合：
 初回のみ、スクリプトの依存関係をインストールします：
 
 ```bash
-cd scripts
+cd .github/scripts/repo-full-sync
 npm install
 npm run build
 ```
@@ -120,11 +120,11 @@ npm run build
 
 ### CSVファイルの配置と保存ポリシー
 
-- `scripts` で生成されたCSVは `docs/data/<ファイル名>/<YYYY>/<MM>/<ファイル名>-YYYY-MM-DD.csv` というディレクトリ構成で保存され、日付ごとに履歴管理されます。
-- ワークフローは `docs/data` ディレクトリ全体をコミット対象とし、日付フォルダ単位の新規ファイルも確実に追跡します。
+- スクリプトで生成されたCSVは `public/data/<ファイル名>/<YYYY>/<MM>/<ファイル名>-YYYY-MM-DD.csv` というディレクトリ構成で保存され、日付ごとに履歴管理されます（ビルド時に `docs/data/` にコピーされます）。
+- ワークフローは `public/data` ディレクトリ全体をコミット対象とし、日付フォルダ単位の新規ファイルも確実に追跡します。
 - Artifactには実行中に更新・追加された最新のCSVファイル（標準出力とサマリーの両方）が添付されるため、不要な過去ファイルを繰り返しアップロードしません。
 
-詳細なワークフロー仕様については [docs/manual/ワークフロー同期制御.md](docs/manual/ワークフロー同期制御.md) を参照してください。
+詳細なワークフロー仕様については [public/manual/ワークフロー同期制御.md](public/manual/ワークフロー同期制御.md) を参照してください。
 
 ## 📊 ステータス判定ロジック
 
@@ -156,22 +156,26 @@ repo-observer/
 │   │   └── ...
 │   ├── components/                   # React コンポーネント
 │   └── lib/                          # ユーティリティ関数
-├── .github/workflows/repo-full-sync/ # ワークフロー関連ファイル
-│   ├── scripts/                      # TypeScript/Node.jsスクリプト
-│   │   ├── src/                      # ソースコード
-│   │   │   ├── exporters/            # CSV/Issue出力モジュール
-│   │   │   └── ...                   # その他のモジュール
-│   │   └── README.md                 # スクリプト詳細仕様
-│   └── README.md                     # ワークフロー関連ファイルの説明
-├── docs/                             # ビルド結果（GitHub Pagesデプロイ用）
+├── .github/
+│   ├── workflows/                    # GitHub Actionsワークフローファイル
+│   │   ├── repo-full-sync.yml        # リポジトリ情報同期ワークフロー
+│   │   └── deploy-docs.yml           # GitHub Pagesデプロイワークフロー
+│   └── scripts/                      # ワークフロー用スクリプト
+│       └── repo-full-sync/           # repo-full-syncワークフロー専用スクリプト
+│           ├── src/                  # TypeScriptソースコード
+│           │   ├── exporters/       # CSV/Issue出力モジュール
+│           │   └── ...               # その他のモジュール
+│           └── README.md             # スクリプト詳細仕様
+├── public/                           # 静的ファイル（ビルド時に docs/ にコピー）
 │   ├── data/                         # CSVデータ（ワークフローで生成）
-│   ├── manual/                       # ドキュメント
-│   │   ├── 構想.md                   # プロジェクトの構想
-│   │   ├── ワークフロー同期制御.md   # ワークフロー詳細仕様
-│   │   ├── DEPLOY.md                 # GitHub Pagesデプロイガイド
-│   │   ├── DIRECTORY_STRUCTURE.md    # ディレクトリ構成の説明
-│   │   └── LICENSE                   # ライセンス
-│   └── README.md                     # プロジェクト説明
+│   └── manual/                       # ドキュメント
+│       ├── 構想.md                   # プロジェクトの構想
+│       ├── ワークフロー同期制御.md   # ワークフロー詳細仕様
+│       ├── DEPLOY.md                 # GitHub Pagesデプロイガイド
+│       ├── DIRECTORY_STRUCTURE.md    # ディレクトリ構成の説明
+│       └── LICENSE                   # ライセンス
+├── docs/                             # ビルド結果（GitHub Pagesデプロイ用）
+│   └── ...                           # ビルド時に public/ からコピーされる
 └── README.md                         # このファイル
 ```
 
@@ -190,7 +194,7 @@ repo-formatter (データ整形)
     └→ issue-exporter → GitHub Issues + Projects
 ```
 
-詳細な技術仕様については [.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md) を参照してください。
+詳細な技術仕様については [.github/scripts/repo-full-sync/README.md](.github/scripts/repo-full-sync/README.md) を参照してください。
 
 ## 🎯 想定される使用例
 
@@ -209,7 +213,7 @@ GitHub Projectでは以下のようなダッシュボードが構築されます
 
 GitHub Actions以外に、ローカル環境でスクリプトを直接実行することも可能です。
 
-詳細な実行方法、環境変数の設定、トラブルシューティングについては [scripts/README.md](scripts/README.md) を参照してください。
+詳細な実行方法、環境変数の設定、トラブルシューティングについては [.github/scripts/repo-full-sync/README.md](.github/scripts/repo-full-sync/README.md) を参照してください。
 
 ## ⚠️ 制限事項
 
@@ -224,7 +228,7 @@ GitHub Actions以外に、ローカル環境でスクリプトを直接実行す
 
 大量のリポジトリ（100以上）を処理する場合、処理完了に時間がかかる可能性があります。
 
-詳細なトラブルシューティングについては [scripts/README.md](scripts/README.md) および [manual/ワークフロー同期制御.md](manual/ワークフロー同期制御.md) を参照してください。
+詳細なトラブルシューティングについては [.github/scripts/repo-full-sync/README.md](.github/scripts/repo-full-sync/README.md) および [public/manual/ワークフロー同期制御.md](public/manual/ワークフロー同期制御.md) を参照してください。
 
 ## 🔧 技術スタック
 
@@ -232,18 +236,20 @@ GitHub Actions以外に、ローカル環境でスクリプトを直接実行す
 - **スクリプト**: TypeScript + Node.js + Octokit
 - **API**: GitHub REST API + GraphQL API
 
-詳細な技術仕様については [.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md) を参照してください。
+詳細な技術仕様については [.github/scripts/repo-full-sync/README.md](.github/scripts/repo-full-sync/README.md) を参照してください。
 
 ## 📚 関連ドキュメント
 
-- **[docs/manual/構想.md](docs/manual/構想.md)** - プロジェクトの構想と背景
-- **[docs/manual/ワークフロー同期制御.md](docs/manual/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
-- **[.github/workflows/repo-full-sync/scripts/README.md](.github/workflows/repo-full-sync/scripts/README.md)** - スクリプトの技術仕様とローカル実行方法
-- **[docs/manual/DEPLOY.md](docs/manual/DEPLOY.md)** - GitHub Pagesデプロイガイド
+- **[public/manual/構想.md](public/manual/構想.md)** - プロジェクトの構想と背景
+- **[public/manual/ワークフロー同期制御.md](public/manual/ワークフロー同期制御.md)** - ワークフローの詳細仕様と運用方法
+- **[.github/scripts/repo-full-sync/README.md](.github/scripts/repo-full-sync/README.md)** - スクリプトの技術仕様とローカル実行方法
+- **[public/manual/DEPLOY.md](public/manual/DEPLOY.md)** - GitHub Pagesデプロイガイド
+
+> **注**: ビルド後は `docs/manual/` からもアクセス可能です（GitHub Pagesで公開される場合）。
 
 ## 📝 ライセンス
 
-このプロジェクトは [MIT License](docs/manual/LICENSE) の下で公開されています。
+このプロジェクトは [MIT License](public/manual/LICENSE) の下で公開されています。
 
 ## 🤝 コントリビューション
 

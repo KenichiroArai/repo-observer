@@ -19,7 +19,9 @@ repo-observer/
 │  ├─ data/                # ビルド時に public/data/ からコピーされる
 │  └─ .nojekyll            # Jekyll無効化ファイル
 │
-├─ .github/workflows/repo-full-sync/scripts/  # データ取得スクリプト（ワークフロー専用）
+├─ .github/
+│  ├─ workflows/                    # GitHub Actionsワークフローファイル
+│  └─ scripts/repo-full-sync/       # データ取得スクリプト（ワークフロー専用）
 ├─ tool/                   # ビルドツール（現在は未使用）
 ├─ manual/                 # マニュアルドキュメント（ソース）
 │
@@ -71,9 +73,9 @@ repo-observer/
 
 ## 🔄 データファイルの管理
 
-- **元データ**: `docs/data/` または `public/data/` に配置
+- **元データ**: `public/data/` に配置（ワークフローで生成）
 - **ビルド時**: `public/data/` の内容が自動的に `docs/data/` にコピーされる
-- **Git管理**: `docs/data/**/*.csv` は追跡対象
+- **Git管理**: `public/data/**/*.csv` は追跡対象
 
 ## 📝 変更履歴
 

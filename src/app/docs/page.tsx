@@ -143,8 +143,101 @@ export default function DocsPage() {
         <div className="lg:col-span-3">
           <div className="bg-white rounded-lg shadow p-8">
             {getActiveContent() ? (
-              <div className="prose max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <div className="prose prose-slate max-w-none
+                prose-headings:font-bold prose-headings:text-gray-900
+                prose-h1:text-3xl prose-h1:mb-6 prose-h1:mt-8
+                prose-h2:text-2xl prose-h2:mb-4 prose-h2:mt-6
+                prose-h3:text-xl prose-h3:mb-3 prose-h3:mt-4
+                prose-p:text-gray-700 prose-p:leading-relaxed
+                prose-a:text-blue-600 prose-a:no-underline hover:prose-a:text-blue-800 hover:prose-a:underline
+                prose-strong:text-gray-900 prose-strong:font-semibold
+                prose-code:text-sm prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-gray-800 prose-code:font-mono
+                prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
+                prose-pre code:bg-transparent prose-pre code:text-gray-100 prose-pre code:p-0
+                prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-700
+                prose-ul:list-disc prose-ul:pl-6 prose-ul:my-4
+                prose-ol:list-decimal prose-ol:pl-6 prose-ol:my-4
+                prose-li:my-2 prose-li:text-gray-700
+                prose-table:w-full prose-table:border-collapse prose-table:my-4
+                prose-th:border prose-th:border-gray-300 prose-th:bg-gray-100 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold
+                prose-td:border prose-td:border-gray-300 prose-td:px-4 prose-td:py-2
+                prose-img:rounded-lg prose-img:shadow-md prose-img:my-4
+                prose-hr:border-gray-300 prose-hr:my-8">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ node, inline, className, children, ...props }: any) {
+                      if (inline) {
+                        return (
+                          <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                      return (
+                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto">
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        </pre>
+                      );
+                    },
+                    table({ children }: any) {
+                      return (
+                        <div className="overflow-x-auto my-4">
+                          <table className="min-w-full border-collapse border border-gray-300">
+                            {children}
+                          </table>
+                        </div>
+                      );
+                    },
+                    thead({ children }: any) {
+                      return <thead className="bg-gray-100">{children}</thead>;
+                    },
+                    th({ children }: any) {
+                      return (
+                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                          {children}
+                        </th>
+                      );
+                    },
+                    td({ children }: any) {
+                      return (
+                        <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                          {children}
+                        </td>
+                      );
+                    },
+                    blockquote({ children }: any) {
+                      return (
+                        <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-4">
+                          {children}
+                        </blockquote>
+                      );
+                    },
+                    a({ href, children }: any) {
+                      return (
+                        <a
+                          href={href}
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                          target={href?.startsWith('http') ? '_blank' : undefined}
+                          rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                        >
+                          {children}
+                        </a>
+                      );
+                    },
+                    img({ src, alt }: any) {
+                      return (
+                        <img
+                          src={src}
+                          alt={alt}
+                          className="rounded-lg shadow-md my-4 max-w-full h-auto"
+                        />
+                      );
+                    },
+                  }}
+                >
                   {getActiveContent()}
                 </ReactMarkdown>
               </div>

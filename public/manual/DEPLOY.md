@@ -86,7 +86,7 @@ https://<ユーザー名>.github.io/<リポジトリ名>/
 
 ## プロジェクト構造
 
-```plaintext
+```text
 repo-observer/
 ├── src/              # ソースコード（Next.js 13+ App Router）
 │   ├── app/          # ページとレイアウト

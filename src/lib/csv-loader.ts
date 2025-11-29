@@ -133,33 +133,60 @@ function getBasePath(): string {
   return '';
 }
 
-async function findLatestCsvFile(basePath: string, type: 'repositories' | 'repositories-summary'): Promise<string | null> {
-  // 現在の日付から過去に向かって最大30日間試行
-  const now = new Date();
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
+interface CsvFileList {
+  repositories: Array<{
+    date: string;
+    year: string;
+    month: string;
+    filename: string;
+    path: string;
+  }>;
+  'repositories-summary': Array<{
+    date: string;
+    year: string;
+    month: string;
+    filename: string;
+    path: string;
+  }>;
+}
 
-    const filename = type === 'repositories'
-      ? `repositories-${dateStr}.csv`
-      : `repositories-summary-${dateStr}.csv`;
-    const url = `${basePath}/data/${type}/${year}/${month}/${filename}`;
+// 利用可能なCSVファイルのリストをキャッシュ
+let cachedFileList: CsvFileList | null = null;
 
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      if (response.ok) {
-        return url;
-      }
-    } catch (error) {
-      // 次の日付を試行
-      continue;
-    }
+async function getAvailableCsvFiles(basePath: string): Promise<CsvFileList> {
+  // キャッシュがあればそれを返す
+  if (cachedFileList) {
+    return cachedFileList;
   }
-  return null;
+
+  try {
+    // ビルド時に生成されたJSONファイルを読み込む
+    const response = await fetch(`${basePath}/csv-file-list.json`);
+    if (!response.ok) {
+      throw new Error('CSVファイルリストの読み込みに失敗しました');
+    }
+    const data = await response.json() as CsvFileList;
+    cachedFileList = data;
+    return data;
+  } catch (error) {
+    console.error('CSVファイルリスト読み込みエラー:', error);
+    // エラー時は空のリストを返す
+    return { repositories: [], 'repositories-summary': [] };
+  }
+}
+
+async function findLatestCsvFile(basePath: string, type: 'repositories' | 'repositories-summary'): Promise<string | null> {
+  // 利用可能なファイルのリストを取得
+  const fileList = await getAvailableCsvFiles(basePath);
+  const availableFiles = fileList[type];
+
+  if (availableFiles.length === 0) {
+    return null;
+  }
+
+  // リストは既に日付でソートされている（新しい順）ので、最初のファイルを返す
+  const latestFile = availableFiles[0];
+  return `${basePath}${latestFile.path}`;
 }
 
 export async function loadLatestRepositories(): Promise<RepositoryData[]> {

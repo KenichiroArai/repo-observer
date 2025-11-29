@@ -166,6 +166,34 @@ export default function DocsPage() {
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
+                    // paragraphコンポーネントをカスタマイズして、コードブロックを含む場合はpタグを使わない
+                    p({ node, children, ...props }: any) {
+                      // 子要素にブロックレベルのコードが含まれているかチェック
+                      // ReactMarkdownのASTでは、ブロックコードは通常code要素として、inline=falseで来る
+                      const hasBlockCode = node?.children?.some((child: any) =>
+                        child.type === 'element' &&
+                        child.tagName === 'code' &&
+                        child.properties?.className?.includes('language')
+                      ) ||
+                      // または、childrenの型を直接チェック（React要素として既に変換されている場合）
+                      (Array.isArray(children) && children.some((child: any) =>
+                        child && typeof child === 'object' && child.type === 'pre'
+                      ));
+
+                      if (hasBlockCode) {
+                        // ブロックコードが含まれている場合はdivタグを使用（pタグの中にpreタグは無効）
+                        return <div className="my-4">{children}</div>;
+                      }
+                      return <p className="text-gray-700 leading-relaxed my-4" {...props}>{children}</p>;
+                    },
+                    // preコンポーネントを明示的にカスタマイズ
+                    pre({ children, ...props }: any) {
+                      return (
+                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto my-4" {...props}>
+                          {children}
+                        </pre>
+                      );
+                    },
                     code({ node, inline, className, children, ...props }: any) {
                       if (inline) {
                         return (
@@ -174,12 +202,11 @@ export default function DocsPage() {
                           </code>
                         );
                       }
+                      // ブロックコードの場合は、親のpreコンポーネントに任せる
                       return (
-                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto">
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        </pre>
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
                       );
                     },
                     table({ children }: any) {

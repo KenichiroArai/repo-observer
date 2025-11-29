@@ -5,10 +5,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function DocsPage() {
-  const [readme, setReadme] = useState<string>('');
   const [manualDocs, setManualDocs] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
-  const [activeDoc, setActiveDoc] = useState<string>('readme');
+  const [activeDoc, setActiveDoc] = useState<string>('');
 
   useEffect(() => {
     async function fetchDocs() {
@@ -42,13 +41,6 @@ export default function DocsPage() {
         };
 
         const basePath = getBasePath();
-
-        // README.mdを読み込む
-        const readmeResponse = await fetch(`${basePath}/README.md`);
-        if (readmeResponse.ok) {
-          const readmeText = await readmeResponse.text();
-          setReadme(readmeText);
-        }
 
         // マニュアルドキュメントを自動的に読み込む
         // ビルド時に自動生成された manual-list.json からファイル一覧を取得
@@ -87,6 +79,12 @@ export default function DocsPage() {
               docs[result.key] = result.content;
             }
           }
+
+          // 最初のドキュメントをアクティブに設定
+          const firstKey = Object.keys(docs)[0];
+          if (firstKey) {
+            setActiveDoc(firstKey);
+          }
         } catch (error) {
           console.error('manual-list.jsonの読み込みエラー:', error);
         }
@@ -113,9 +111,6 @@ export default function DocsPage() {
   }
 
   const getActiveContent = () => {
-    if (activeDoc === 'readme') {
-      return readme;
-    }
     return manualDocs[activeDoc] || '';
   };
 
@@ -128,16 +123,6 @@ export default function DocsPage() {
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-semibold mb-4">目次</h2>
             <nav className="space-y-2">
-              <button
-                onClick={() => setActiveDoc('readme')}
-                className={`w-full text-left px-4 py-2 rounded-md transition ${
-                  activeDoc === 'readme'
-                    ? 'bg-blue-100 text-blue-800 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                README
-              </button>
               {Object.keys(manualDocs).map((key) => (
                 <button
                   key={key}

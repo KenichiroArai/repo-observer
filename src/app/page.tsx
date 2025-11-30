@@ -78,30 +78,6 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <span className="text-3xl">⭐</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">総スター数</p>
-              <p className="text-2xl font-semibold text-gray-900">{totalStars.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-3xl">🍴</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">総フォーク数</p>
-              <p className="text-2xl font-semibold text-gray-900">{totalForks.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
               <span className="text-3xl">📊</span>
             </div>
             <div className="ml-4">
@@ -110,9 +86,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -133,6 +107,32 @@ export default function Home() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">クローズしたIssue</p>
               <p className="text-2xl font-semibold text-gray-900">{totalClosedIssues.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <span className="text-3xl">⭐</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">総スター数</p>
+              <p className="text-2xl font-semibold text-gray-900">{totalStars.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <span className="text-3xl">🍴</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">総フォーク数</p>
+              <p className="text-2xl font-semibold text-gray-900">{totalForks.toLocaleString()}</p>
             </div>
           </div>
         </div>

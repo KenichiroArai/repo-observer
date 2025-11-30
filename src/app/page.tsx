@@ -51,6 +51,8 @@ export default function Home() {
   const totalOpenIssues = data.reduce((sum, repo) => sum + (Number(repo.openIssues) || 0), 0);
   const totalClosedIssues = data.reduce((sum, repo) => sum + (Number(repo.closedIssues) || 0), 0);
   const totalIssues = totalOpenIssues + totalClosedIssues;
+  const openIssuesPercentage = totalIssues > 0 ? (totalOpenIssues / totalIssues * 100) : 0;
+  const closedIssuesPercentage = totalIssues > 0 ? (totalClosedIssues / totalIssues * 100) : 0;
 
   if (loading) {
     return (
@@ -92,9 +94,21 @@ export default function Home() {
             <div className="flex-shrink-0">
               <span className="text-3xl">🐞</span>
             </div>
-            <div className="ml-4">
+            <div className="ml-4 flex-1">
               <p className="text-sm font-medium text-gray-500">未解決Issue</p>
               <p className="text-2xl font-semibold text-gray-900">{totalOpenIssues.toLocaleString()}</p>
+              <div className="mt-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                  <span>進捗</span>
+                  <span className="font-semibold text-pink-600">{openIssuesPercentage.toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-pink-500 h-2 rounded-full transition-all"
+                    style={{ width: `${openIssuesPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -104,9 +118,21 @@ export default function Home() {
             <div className="flex-shrink-0">
               <span className="text-3xl">✅</span>
             </div>
-            <div className="ml-4">
+            <div className="ml-4 flex-1">
               <p className="text-sm font-medium text-gray-500">クローズしたIssue</p>
               <p className="text-2xl font-semibold text-gray-900">{totalClosedIssues.toLocaleString()}</p>
+              <div className="mt-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                  <span>進捗</span>
+                  <span className="font-semibold text-green-600">{closedIssuesPercentage.toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full transition-all"
+                    style={{ width: `${closedIssuesPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

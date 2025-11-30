@@ -93,14 +93,24 @@ export class CsvImporter {
       return [];
     }
 
-    const latestExportedAtUtc = rows.reduce<string>((latest, row) => {
-      return row.exportedAtUtc > latest ? row.exportedAtUtc : latest;
-    }, rows[0].exportedAtUtc);
+    // exportedAtUtcが存在する行のみをフィルタ
+    const validRows = rows.filter((row): row is Partial<CsvRow> & { exportedAtUtc: string } =>
+      typeof row.exportedAtUtc === 'string' && row.exportedAtUtc.length > 0
+    );
 
-    const latestRows = rows.filter(row => row.exportedAtUtc === latestExportedAtUtc);
+    if (validRows.length === 0) {
+      console.warn('有効なエクスポート日時を持つレコードがありません。');
+      return [];
+    }
+
+    const latestExportedAtUtc = validRows.reduce<string>((latest, row) => {
+      return row.exportedAtUtc > latest ? row.exportedAtUtc : latest;
+    }, validRows[0].exportedAtUtc);
+
+    const latestRows = validRows.filter(row => row.exportedAtUtc === latestExportedAtUtc);
     console.log(`最新エクスポート時刻 (${latestExportedAtUtc}) の ${latestRows.length} 件を使用します`);
 
-    return latestRows.map(row => this.mapRowToRepo(row));
+    return latestRows.map(row => this.mapRowToRepo(row as CsvRow));
   }
 
   private resolveLatestCsvPath(): string {

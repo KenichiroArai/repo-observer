@@ -11,6 +11,7 @@ export interface RepositoryInfo {
   forks: number;
   watchers: number;
   openIssues: number;
+  closedIssues: number;
   size: number; // KB単位
   language: string;
   license: string;

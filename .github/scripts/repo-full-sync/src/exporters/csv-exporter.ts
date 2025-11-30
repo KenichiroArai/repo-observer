@@ -80,6 +80,7 @@ export class CsvExporter {
         { id: 'forks', title: 'フォーク数' },
         { id: 'watchers', title: 'ウォッチャー数' },
         { id: 'openIssues', title: '未解決Issue数' },
+        { id: 'closedIssues', title: 'クローズ済みIssue数' },
         { id: 'sizeDisplay', title: 'サイズ' },
         { id: 'language', title: '使用言語' },
         { id: 'license', title: 'ライセンス' },
@@ -116,6 +117,7 @@ export class CsvExporter {
       forks: repo.forks,
       watchers: repo.watchers,
       openIssues: repo.openIssues,
+      closedIssues: repo.closedIssues,
       sizeDisplay: repo.sizeDisplay,
       language: repo.language,
       license: repo.license,
@@ -181,6 +183,7 @@ export class CsvExporter {
         { id: 'stars', title: 'スター数' },
         { id: 'forks', title: 'フォーク数' },
         { id: 'openIssues', title: '未解決Issue' },
+        { id: 'closedIssues', title: 'クローズ済みIssue' },
         { id: 'language', title: '言語' },
         { id: 'pushedDate', title: '最終Push' },
         { id: 'url', title: 'URL' }
@@ -197,6 +200,7 @@ export class CsvExporter {
       stars: repo.stars,
       forks: repo.forks,
       openIssues: repo.openIssues,
+      closedIssues: repo.closedIssues,
       language: repo.language,
       pushedDate: repo.pushedDateStr,
       url: repo.url

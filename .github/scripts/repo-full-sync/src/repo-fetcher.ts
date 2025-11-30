@@ -105,6 +105,19 @@ export class RepoFetcher {
         latestIssueUpdated = undefined;
       }
 
+      // クローズしたIssue数を取得
+      let closedIssues = 0;
+      try {
+        // Issuesが有効な場合のみ取得
+        if (data.has_issues) {
+          closedIssues = await this.fetchClosedIssuesCount(owner, repo);
+        }
+      } catch (error) {
+        // エラーが発生した場合は0として扱う
+        console.warn(`クローズしたIssue数取得エラー (${owner}/${repo}):`, error);
+        closedIssues = 0;
+      }
+
       return {
         name: data.name,
         fullName: data.full_name,
@@ -113,6 +126,7 @@ export class RepoFetcher {
         forks: data.forks_count,
         watchers: data.watchers_count,
         openIssues: data.open_issues_count,
+        closedIssues: closedIssues,
         size: data.size,
         language: data.language || '不明',
         license: data.license?.name || 'ライセンスなし',
@@ -142,6 +156,45 @@ export class RepoFetcher {
    */
   async fetchRepository(owner: string, repo: string): Promise<RepositoryInfo> {
     return this.fetchRepositoryDetails(owner, repo);
+  }
+
+  /**
+   * クローズしたIssue数を取得
+   */
+  private async fetchClosedIssuesCount(owner: string, repo: string): Promise<number> {
+    let count = 0;
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      try {
+        const response = await this.octokit.issues.listForRepo({
+          owner,
+          repo,
+          state: 'closed',
+          per_page: perPage,
+          page: page
+        });
+
+        // Pull Requestは除外（Issueのみをカウント）
+        const issuesOnly = response.data.filter(
+          issue => !issue.pull_request
+        );
+        count += issuesOnly.length;
+
+        // 次のページがあるか確認
+        if (response.data.length < perPage) {
+          break;
+        }
+
+        page++;
+      } catch (error) {
+        console.warn(`クローズしたIssue取得エラー (${owner}/${repo}, page ${page}):`, error);
+        break;
+      }
+    }
+
+    return count;
   }
 }
 

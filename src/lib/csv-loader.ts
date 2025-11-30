@@ -13,6 +13,7 @@ export interface RepositoryData {
   forks: number;
   watchers: number;
   openIssues: number;
+  closedIssues: number;
   sizeDisplay: string;
   language: string;
   license: string;
@@ -40,6 +41,7 @@ export interface RepositorySummary {
   stars: number;
   forks: number;
   openIssues: number;
+  closedIssues: number;
   language: string;
   pushedDate: string;
   url: string;
@@ -58,6 +60,7 @@ const HEADER_MAP: Record<string, keyof RepositoryData> = {
   'フォーク数': 'forks',
   'ウォッチャー数': 'watchers',
   '未解決Issue数': 'openIssues',
+  'クローズ済みIssue数': 'closedIssues',
   'サイズ': 'sizeDisplay',
   '使用言語': 'language',
   'ライセンス': 'license',
@@ -85,6 +88,7 @@ const SUMMARY_HEADER_MAP: Record<string, keyof RepositorySummary> = {
   'スター数': 'stars',
   'フォーク数': 'forks',
   '未解決Issue': 'openIssues',
+  'クローズ済みIssue': 'closedIssues',
   '言語': 'language',
   '最終Push': 'pushedDate',
   'URL': 'url',
@@ -235,6 +239,7 @@ export async function loadLatestRepositories(): Promise<RepositoryData[]> {
         forks: parseNumber(mapped.forks || '0'),
         watchers: parseNumber(mapped.watchers || '0'),
         openIssues: parseNumber(mapped.openIssues || '0'),
+        closedIssues: parseNumber(mapped.closedIssues || '0'),
       } as RepositoryData;
     });
   } catch (error) {
@@ -285,6 +290,7 @@ export async function loadLatestSummary(): Promise<RepositorySummary[]> {
         stars: parseNumber(mapped.stars || '0'),
         forks: parseNumber(mapped.forks || '0'),
         openIssues: parseNumber(mapped.openIssues || '0'),
+        closedIssues: parseNumber(mapped.closedIssues || '0'),
       } as RepositorySummary;
     });
   } catch (error) {
@@ -298,6 +304,8 @@ export interface TimeSeriesData {
   totalStars: number;
   totalForks: number;
   totalOpenIssues: number;
+  totalClosedIssues: number;
+  totalIssues: number;
   totalRepos: number;
   exportedAtJst: string;
 }
@@ -360,6 +368,7 @@ export async function loadSummaryByDate(date: string): Promise<RepositorySummary
         stars: parseNumber(mapped.stars || '0'),
         forks: parseNumber(mapped.forks || '0'),
         openIssues: parseNumber(mapped.openIssues || '0'),
+        closedIssues: parseNumber(mapped.closedIssues || '0'),
       } as RepositorySummary;
     });
   } catch (error) {
@@ -380,6 +389,8 @@ export async function loadTimeSeriesData(): Promise<TimeSeriesData[]> {
         const totalStars = summaries.reduce((sum, repo) => sum + repo.stars, 0);
         const totalForks = summaries.reduce((sum, repo) => sum + repo.forks, 0);
         const totalOpenIssues = summaries.reduce((sum, repo) => sum + repo.openIssues, 0);
+        const totalClosedIssues = summaries.reduce((sum, repo) => sum + repo.closedIssues, 0);
+        const totalIssues = totalOpenIssues + totalClosedIssues;
         const exportedAtJst = summaries[0]?.exportedAtJst || '';
 
         timeSeriesData.push({
@@ -387,6 +398,8 @@ export async function loadTimeSeriesData(): Promise<TimeSeriesData[]> {
           totalStars,
           totalForks,
           totalOpenIssues,
+          totalClosedIssues,
+          totalIssues,
           totalRepos: summaries.length,
           exportedAtJst,
         });

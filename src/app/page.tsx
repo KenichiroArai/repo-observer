@@ -46,9 +46,11 @@ export default function Home() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  const totalStars = data.reduce((sum, repo) => sum + repo.stars, 0);
-  const totalForks = data.reduce((sum, repo) => sum + repo.forks, 0);
-  const totalOpenIssues = data.reduce((sum, repo) => sum + repo.openIssues, 0);
+  const totalStars = data.reduce((sum, repo) => sum + (Number(repo.stars) || 0), 0);
+  const totalForks = data.reduce((sum, repo) => sum + (Number(repo.forks) || 0), 0);
+  const totalOpenIssues = data.reduce((sum, repo) => sum + (Number(repo.openIssues) || 0), 0);
+  const totalClosedIssues = data.reduce((sum, repo) => sum + (Number(repo.closedIssues) || 0), 0);
+  const totalIssues = totalOpenIssues + totalClosedIssues;
 
   if (loading) {
     return (
@@ -104,7 +106,7 @@ export default function Home() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">総Issue数</p>
-              <p className="text-2xl font-semibold text-gray-900">{totalOpenIssues.toLocaleString()}</p>
+              <p className="text-2xl font-semibold text-gray-900">{totalIssues.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -130,8 +132,7 @@ export default function Home() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">クローズしたIssue</p>
-              <p className="text-2xl font-semibold text-gray-900">0</p>
-              <p className="text-xs text-gray-400 mt-1">※データ準備中</p>
+              <p className="text-2xl font-semibold text-gray-900">{totalClosedIssues.toLocaleString()}</p>
             </div>
           </div>
         </div>

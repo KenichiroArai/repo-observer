@@ -47,8 +47,8 @@ export default function ChangeRateAnalysisPage() {
           const forksChangeRate = previous.totalForks > 0
             ? ((current.totalForks - previous.totalForks) / previous.totalForks) * 100
             : 0;
-          const issuesChangeRate = previous.totalOpenIssues > 0
-            ? ((current.totalOpenIssues - previous.totalOpenIssues) / previous.totalOpenIssues) * 100
+          const issuesChangeRate = previous.totalIssues > 0
+            ? ((current.totalIssues - previous.totalIssues) / previous.totalIssues) * 100
             : 0;
           const reposChangeRate = previous.totalRepos > 0
             ? ((current.totalRepos - previous.totalRepos) / previous.totalRepos) * 100
@@ -112,7 +112,7 @@ export default function ChangeRateAnalysisPage() {
     ? calculateChangeRate(latestData.totalForks, previousData.totalForks)
     : 0;
   const issuesChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalOpenIssues, previousData.totalOpenIssues)
+    ? calculateChangeRate(latestData.totalIssues, previousData.totalIssues)
     : 0;
   const reposChangeRate = latestData && previousData
     ? calculateChangeRate(latestData.totalRepos, previousData.totalRepos)
@@ -155,7 +155,7 @@ export default function ChangeRateAnalysisPage() {
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-500">総Issue数</p>
-            <p className="text-2xl font-semibold text-gray-900">{latestData.totalOpenIssues.toLocaleString()}</p>
+            <p className="text-2xl font-semibold text-gray-900">{latestData.totalIssues.toLocaleString()}</p>
             <p className={`text-sm mt-2 ${issuesChangeRate >= 0 ? 'text-red-600' : 'text-green-600'}`}>
               {issuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(issuesChangeRate).toFixed(2)}% (前日比)
             </p>

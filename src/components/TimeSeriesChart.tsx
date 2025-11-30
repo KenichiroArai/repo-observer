@@ -66,7 +66,7 @@ function TimeSeriesChartComponent({ data }: TimeSeriesChartProps) {
         <Line
           yAxisId="right"
           type="monotone"
-          dataKey="totalOpenIssues"
+          dataKey="totalIssues"
           stroke="#ffc658"
           name="総Issue数"
           strokeWidth={2}

@@ -151,7 +151,7 @@ repo-observer/
 │   └── deploy-docs.yml               # GitHub Pagesデプロイワークフロー
 ├── src/                              # ソースコード（Next.js 13+ App Router）
 │   ├── app/                          # ページとレイアウト
-│   │   ├── dashboard/                # ダッシュボードページ
+│   │   ├── change-rate-analysis/      # 変化率分析ページ
 │   │   ├── repositories/             # リポジトリ一覧ページ
 │   │   └── ...
 │   ├── components/                   # React コンポーネント

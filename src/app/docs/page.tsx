@@ -33,7 +33,7 @@ export default function DocsPage() {
           // リポジトリ名（最初のパスセグメント）を取得
           // 例: /repo-observer/docs → basePath = /repo-observer
           // ただし、/docs のような場合は空文字列を返す（開発環境の可能性）
-          if (parts.length > 0 && parts[0] !== 'docs' && parts[0] !== 'dashboard' && parts[0] !== 'top' && parts[0] !== 'documents') {
+          if (parts.length > 0 && parts[0] !== 'docs' && parts[0] !== 'change-rate-analysis' && parts[0] !== 'top' && parts[0] !== 'documents') {
             return '/' + parts[0];
           }
 

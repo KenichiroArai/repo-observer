@@ -125,7 +125,7 @@ function getBasePath(): string {
   const parts = pathname.split('/').filter(Boolean);
 
   // リポジトリ名（最初のパスセグメント）を取得
-  // 例: /repo-observer/dashboard → basePath = /repo-observer
+  // 例: /repo-observer/change-rate-analysis → basePath = /repo-observer
   if (parts.length > 0) {
     return '/' + parts[0];
   }

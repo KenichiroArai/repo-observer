@@ -16,6 +16,7 @@ interface CsvRow {
   forks: string;
   watchers: string;
   openIssues: string;
+  closedIssues?: string;
   sizeDisplay: string;
   language: string;
   license: string;
@@ -48,6 +49,7 @@ const HEADER_MAP: Record<string, keyof CsvRow> = {
   'フォーク数': 'forks',
   'ウォッチャー数': 'watchers',
   '未解決Issue数': 'openIssues',
+  'クローズ済みIssue数': 'closedIssues',
   'サイズ': 'sizeDisplay',
   '使用言語': 'language',
   'ライセンス': 'license',
@@ -79,14 +81,12 @@ export class CsvImporter {
       bom: true,
       columns: (header: string[]) => header.map((h: string) => {
         const mapped = HEADER_MAP[h.trim()];
-        if (!mapped) {
-          throw new Error(`未知のCSVヘッダーです: ${h}`);
-        }
-        return mapped;
+        // 未知のヘッダーは無視（後方互換性のため）
+        return mapped || h.trim();
       }),
       skip_empty_lines: true,
       trim: true
-    }) as CsvRow[];
+    }) as Partial<CsvRow>[];
 
     if (rows.length === 0) {
       console.warn('CSVファイルに有効なレコードがありません。');
@@ -200,6 +200,7 @@ export class CsvImporter {
       forks: this.parseNumber(row.forks),
       watchers: this.parseNumber(row.watchers),
       openIssues: this.parseNumber(row.openIssues),
+      closedIssues: row.closedIssues ? this.parseNumber(row.closedIssues) : 0,
       size: this.parseSize(row.sizeDisplay),
       language: row.language || '未設定',
       license: row.license || '未設定',

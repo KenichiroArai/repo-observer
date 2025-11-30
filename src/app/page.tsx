@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { loadLatestSummary } from '../lib/csv-loader';
-import { RepositorySummary } from '../lib/csv-loader';
+import { loadLatestSummary, loadTimeSeriesData } from '../lib/csv-loader';
+import { RepositorySummary, TimeSeriesData } from '../lib/csv-loader';
 import StatusChart from '../components/StatusChart';
 import LanguageChart from '../components/LanguageChart';
+import TimeSeriesChart from '../components/TimeSeriesChart';
 
 export default function Home() {
   const [data, setData] = useState<RepositorySummary[]>([]);
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeSeriesLoading, setTimeSeriesLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
@@ -23,6 +26,20 @@ export default function Home() {
       }
     }
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTimeSeriesData() {
+      try {
+        const timeSeries = await loadTimeSeriesData();
+        setTimeSeriesData(timeSeries);
+      } catch (error) {
+        console.error('時系列データ読み込みエラー:', error);
+      } finally {
+        setTimeSeriesLoading(false);
+      }
+    }
+    fetchTimeSeriesData();
   }, []);
 
   const statusCounts = data.reduce((acc, repo) => {
@@ -120,6 +137,29 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-4">言語別リポジトリ数（上位10）</h2>
           <LanguageChart data={languageData} />
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">📈 時系列推移</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          リポジトリの活動状況の時系列推移を表示します。日付ごとの総スター数、総フォーク数、総Issue数、リポジトリ数の変化を確認できます。
+        </p>
+        {timeSeriesLoading ? (
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-4 text-gray-600">時系列データを読み込んでいます...</p>
+            </div>
+          </div>
+        ) : (
+          <TimeSeriesChart data={timeSeriesData} />
+        )}
+        {timeSeriesData.length > 0 && (
+          <div className="mt-4 text-sm text-gray-600">
+            <p>データ期間: {timeSeriesData[0]?.date} ～ {timeSeriesData[timeSeriesData.length - 1]?.date}</p>
+            <p>最新データ取得日時: {timeSeriesData[timeSeriesData.length - 1]?.exportedAtJst}</p>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-8">

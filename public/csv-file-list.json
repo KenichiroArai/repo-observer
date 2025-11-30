@@ -1,6 +1,13 @@
 {
   "repositories": [
     {
+      "date": "2025-11-30",
+      "year": "2025",
+      "month": "11",
+      "filename": "repositories-2025-11-30.csv",
+      "path": "/data/repositories/2025/11/repositories-2025-11-30.csv"
+    },
+    {
       "date": "2025-11-29",
       "year": "2025",
       "month": "11",
@@ -72,6 +79,13 @@
     }
   ],
   "repositories-summary": [
+    {
+      "date": "2025-11-30",
+      "year": "2025",
+      "month": "11",
+      "filename": "repositories-summary-2025-11-30.csv",
+      "path": "/data/repositories-summary/2025/11/repositories-summary-2025-11-30.csv"
+    },
     {
       "date": "2025-11-29",
       "year": "2025",

@@ -293,9 +293,110 @@ export async function loadLatestSummary(): Promise<RepositorySummary[]> {
   }
 }
 
-export function getAvailableDates(): string[] {
-  // 実際の実装では、dataフォルダをスキャンして利用可能な日付を取得
-  // ここでは固定値を返す
-  return ['2025-11-17', '2025-11-16', '2025-11-15', '2025-11-14'];
+export interface TimeSeriesData {
+  date: string;
+  totalStars: number;
+  totalForks: number;
+  totalOpenIssues: number;
+  totalRepos: number;
+  exportedAtJst: string;
+}
+
+// 利用可能な日付リストを取得
+export async function getAvailableDates(): Promise<string[]> {
+  try {
+    const basePath = getBasePath();
+    const fileList = await getAvailableCsvFiles(basePath);
+    return fileList['repositories-summary'].map(file => file.date).sort().reverse();
+  } catch (error) {
+    console.error('利用可能な日付の取得エラー:', error);
+    return [];
+  }
+}
+
+// 指定した日付のサマリーデータを読み込む
+export async function loadSummaryByDate(date: string): Promise<RepositorySummary[]> {
+  try {
+    const basePath = getBasePath();
+    const fileList = await getAvailableCsvFiles(basePath);
+    const fileInfo = fileList['repositories-summary'].find(file => file.date === date);
+
+    if (!fileInfo) {
+      throw new Error(`指定された日付(${date})のCSVファイルが見つかりませんでした`);
+    }
+
+    const csvUrl = `${basePath}${fileInfo.path}`;
+    const response = await fetch(csvUrl);
+    if (!response.ok) {
+      throw new Error('CSVファイルの読み込みに失敗しました');
+    }
+
+    const text = await response.text();
+    const result: ParseResult<Record<string, unknown>> = parse(text, {
+      header: true,
+      skipEmptyLines: true,
+    });
+
+    const rows = result.data as any[];
+    if (rows.length === 0) {
+      return [];
+    }
+
+    // 最新のエクスポート日時を取得
+    const latestExportedAtUtc = rows.reduce<string>((latest, row) => {
+      const exportedAt = row['エクスポート日時(UTC)'] || '';
+      return exportedAt > latest ? exportedAt : latest;
+    }, rows[0]['エクスポート日時(UTC)'] || '');
+
+    // 最新のデータのみをフィルタ
+    const latestRows = rows.filter(
+      (row) => row['エクスポート日時(UTC)'] === latestExportedAtUtc
+    );
+
+    return latestRows.map((row) => {
+      const mapped = mapRow(row, SUMMARY_HEADER_MAP as any);
+      return {
+        ...mapped,
+        stars: parseNumber(mapped.stars || '0'),
+        forks: parseNumber(mapped.forks || '0'),
+        openIssues: parseNumber(mapped.openIssues || '0'),
+      } as RepositorySummary;
+    });
+  } catch (error) {
+    console.error('CSV読み込みエラー:', error);
+    return [];
+  }
+}
+
+// 時系列データを取得（全日付のサマリー）
+export async function loadTimeSeriesData(): Promise<TimeSeriesData[]> {
+  try {
+    const dates = await getAvailableDates();
+    const timeSeriesData: TimeSeriesData[] = [];
+
+    for (const date of dates) {
+      const summaries = await loadSummaryByDate(date);
+      if (summaries.length > 0) {
+        const totalStars = summaries.reduce((sum, repo) => sum + repo.stars, 0);
+        const totalForks = summaries.reduce((sum, repo) => sum + repo.forks, 0);
+        const totalOpenIssues = summaries.reduce((sum, repo) => sum + repo.openIssues, 0);
+        const exportedAtJst = summaries[0]?.exportedAtJst || '';
+
+        timeSeriesData.push({
+          date,
+          totalStars,
+          totalForks,
+          totalOpenIssues,
+          totalRepos: summaries.length,
+          exportedAtJst,
+        });
+      }
+    }
+
+    return timeSeriesData.sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    console.error('時系列データ読み込みエラー:', error);
+    return [];
+  }
 }
 

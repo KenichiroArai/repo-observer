@@ -1,0 +1,55 @@
+# Node.js
+node_modules/
+/.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# プロジェクト固有の出力ファイル
+scripts/output/
+scripts/*.csv
+
+# Next.js
+.next/
+/out/
+.swc/
+build/
+.next/cache/
+
+# docs/ ディレクトリ（GitHub Pagesデプロイ用）
+# フォルダ自体は残すが、配下の内容はコミット対象外
+docs/*
+
+
+# 環境変数ファイル
+.env*.local
+docs/.env*.local
+
+# Vercel
+.vercel
+docs/.vercel
+
+# テスト
+/coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ログ
+*.log
+
+# その他
+*.pem

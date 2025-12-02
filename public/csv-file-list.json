@@ -1,0 +1,20 @@
+{
+  "repositories": [
+    {
+      "date": "2025-12-02",
+      "year": "2025",
+      "month": "12",
+      "filename": "repositories-2025-12-02.csv",
+      "path": "/data/repositories/2025/12/repositories-2025-12-02.csv"
+    }
+  ],
+  "repositories-summary": [
+    {
+      "date": "2025-12-02",
+      "year": "2025",
+      "month": "12",
+      "filename": "repositories-summary-2025-12-02.csv",
+      "path": "/data/repositories-summary/2025/12/repositories-summary-2025-12-02.csv"
+    }
+  ]
+}

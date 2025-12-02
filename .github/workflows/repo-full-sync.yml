@@ -1,0 +1,348 @@
+# リポジトリ情報同期ワークフロー
+# CSV出力とIssue同期を順次実行し、データ取得を1回に最適化
+name: リポジトリ情報同期
+
+on:
+  schedule:
+    # 毎日午前3時（JST）に実行（UTC 18:00）
+    # 両方の処理を一度に実行するため、これ1つで完結
+    - cron: "0 18 * * *"
+  workflow_dispatch: # 手動実行も可能
+    inputs:
+      target_user:
+        description: "対象ユーザー名（例: KenichiroArai）"
+        required: true
+        default: "KenichiroArai"
+      project_number:
+        description: "Project番号（例: 15）未指定の場合はProject連動なし"
+        required: false
+        default: "15"
+      project_status_field:
+        description: "Projectのステータスフィールド名"
+        required: false
+        default: "Status"
+      include_private:
+        description: "プライベートリポジトリを含める"
+        type: boolean
+        required: false
+        default: true
+      include_archived:
+        description: "アーカイブ済みリポジトリを含める"
+        type: boolean
+        required: false
+        default: true
+      export_summary:
+        description: "サマリーCSVも出力する"
+        type: boolean
+        required: false
+        default: true
+      run_issue_sync:
+        description: "Issue同期も実行する"
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  # ステップ1: 依存関係をビルドしてキャッシュ
+  build-and-prepare:
+    name: ビルドと準備
+    runs-on: ubuntu-latest
+    outputs:
+      repos-fetched: ${{ steps.fetch.outputs.count }}
+      workflow-version: ${{ steps.version.outputs.info }}
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 履歴全体を取得してバージョン情報を確認
+
+      - name: ワークフローバージョン情報を確認
+        id: version
+        run: |
+          echo "## 🔖 ワークフローバージョン情報" >> $GITHUB_STEP_SUMMARY
+          echo "| 項目 | 値 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          RUN_COMMIT="${{ github.sha }}"
+          RUN_COMMIT_SHORT=${RUN_COMMIT:0:8}
+
+          echo "| 実行コミットSHA | \`${RUN_COMMIT}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 実行ブランチ/Ref | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| トリガー | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 実行日時 | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
+
+          # ワークフローファイルの最終更新情報を取得
+          WORKFLOW_FILE=".github/workflows/repo-full-sync.yml"
+          WORKFLOW_LAST_COMMIT=$(git log -1 --format="%H" -- $WORKFLOW_FILE)
+          WORKFLOW_LAST_DATE=$(git log -1 --format="%ci" -- $WORKFLOW_FILE)
+          WORKFLOW_LAST_AUTHOR=$(git log -1 --format="%an" -- $WORKFLOW_FILE)
+          WORKFLOW_LAST_MESSAGE=$(git log -1 --format="%s" -- $WORKFLOW_FILE)
+
+          echo "| ワークフロー最終更新コミット | \`${WORKFLOW_LAST_COMMIT:0:8}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ワークフロー最終更新日時 | $WORKFLOW_LAST_DATE |" >> $GITHUB_STEP_SUMMARY
+          echo "| ワークフロー最終更新者 | $WORKFLOW_LAST_AUTHOR |" >> $GITHUB_STEP_SUMMARY
+          echo "| ワークフロー最終コミットメッセージ | $WORKFLOW_LAST_MESSAGE |" >> $GITHUB_STEP_SUMMARY
+
+          # 出力変数として保存
+          echo "info=${WORKFLOW_LAST_COMMIT:0:8}_$(date -u +"%Y%m%d_%H%M%S")" >> $GITHUB_OUTPUT
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: .github/scripts/repo-full-sync/package.json
+
+      - name: 依存関係をインストール
+        run: |
+          cd .github/scripts/repo-full-sync
+          npm ci
+
+      - name: TypeScriptをビルド
+        run: |
+          cd .github/scripts/repo-full-sync
+          npm run build
+
+      - name: リポジトリ情報を取得
+        id: fetch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_USER: ${{ github.event.inputs.target_user }}
+        run: |
+          cd .github/scripts/repo-full-sync
+          # ここでは情報取得のみ実行し、後続ジョブで再利用
+          echo "count=0" >> $GITHUB_OUTPUT
+          echo "✅ 依存関係の準備が完了しました"
+
+      # ビルド済みスクリプトをアーティファクトとして保存
+      - name: ビルド成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-scripts
+          path: |
+            .github/scripts/repo-full-sync/dist/
+            .github/scripts/repo-full-sync/node_modules/
+            .github/scripts/repo-full-sync/package.json
+          retention-days: 1
+
+  # ステップ2: CSV出力（並列実行可能だが、順次実行で安全性確保）
+  export-csv:
+    name: CSV出力
+    needs: build-and-prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: built-scripts
+          path: .github/scripts/repo-full-sync/
+
+      - name: CSV出力ディレクトリを作成
+        run: |
+          mkdir -p public/data
+
+      - name: CSV出力を実行
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
+          OUTPUT_PATH: ../../../public/data/repositories.csv
+          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
+          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
+          EXPORT_SUMMARY: ${{ github.event.inputs.export_summary || 'true' }}
+        run: |
+          cd .github/scripts/repo-full-sync
+          node dist/index.js export-csv
+
+      - name: CSV出力後のディレクトリ構造を確認
+        run: |
+          echo "=== CSV出力後の構造確認 ==="
+          echo "public/data の構造:"
+          ls -la public/data/ || echo "public/data が見つかりません"
+          echo ""
+          echo "public/data/repositories の構造:"
+          if [ -d "public/data/repositories" ]; then
+            ls -la public/data/repositories/ || echo "public/data/repositories は空です"
+            echo ""
+            echo "CSVファイル一覧:"
+            find public/data/repositories -type f -name "*.csv" | head -10
+          else
+            echo "❌ public/data/repositories ディレクトリが見つかりません"
+            echo ""
+            echo "public/data 配下の全ファイル:"
+            find public/data -type f | head -20
+          fi
+
+      - name: Issue同期用CSVを共有
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-repositories-csv
+          path: public/data/repositories/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: 最新CSVファイルを収集
+        id: collect_csv
+        run: |
+          git status -s -- public/data > /tmp/csv_changes.txt
+          if [ ! -s /tmp/csv_changes.txt ]; then
+            echo "paths=" >> $GITHUB_OUTPUT
+            echo "変更されたCSVファイルはありません。"
+            exit 0
+          fi
+
+          cut -c4- /tmp/csv_changes.txt | grep -E '\.csv$' > /tmp/csv_files.txt || true
+
+          if [ ! -s /tmp/csv_files.txt ]; then
+            echo "paths=" >> $GITHUB_OUTPUT
+            echo "CSV拡張子の変更は検出されませんでした。"
+            exit 0
+          fi
+
+          echo "以下のファイルをアップロード対象とします:"
+          cat /tmp/csv_files.txt
+
+          {
+            echo "paths<<EOF"
+            cat /tmp/csv_files.txt
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: CSVファイルをリポジトリにコミット
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/data
+
+          # 変更があればコミット
+          if git diff --staged --quiet; then
+            echo "変更がありません。コミットをスキップします。"
+          else
+            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            git commit -m "chore: リポジトリ情報CSVを更新 (${TIMESTAMP})" \
+                       -m "ワークフロー実行: ${{ github.run_number }}" \
+                       -m "実行者: ${{ github.triggering_actor }}" \
+                       -m "トリガー: ${{ github.event_name }}"
+            git push
+            echo "✅ CSVファイルをコミットしました"
+          fi
+
+      - name: 出力ファイルをアップロード
+        if: ${{ steps.collect_csv.outputs.paths != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-csv-full-sync-${{ github.run_number }}-${{ needs.build-and-prepare.outputs.workflow-version }}
+          path: ${{ steps.collect_csv.outputs.paths }}
+          if-no-files-found: ignore
+          retention-days: 90
+
+  # ステップ3: Issue同期（CSV出力完了後に実行）
+  # 注意: GitHubのセカンダリレート制限を回避するため、スクリプト内で以下の対策を実装:
+  # - 各API呼び出し間に待機時間を設定
+  # - セカンダリレート制限エラー時は自動的に1分以上待機してリトライ
+  # - リトライは最大6回まで（指数バックオフ: 1分→2分→4分→8分→16分→32分→60分）
+  sync-issues:
+    name: Issue同期
+    needs: [build-and-prepare, export-csv]
+    # CSV出力で生成したデータを再利用する
+    if: ${{ (github.event.inputs.run_issue_sync != 'false') && needs.build-and-prepare.result == 'success' && needs.export-csv.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+      repository-projects: write
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: built-scripts
+          path: .github/scripts/repo-full-sync/
+
+      - name: CSVデータを取得
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-repositories-csv
+          path: public/data
+          merge-multiple: false
+
+      - name: CSVディレクトリ構造を確認
+        run: |
+          echo "=== 現在のディレクトリ ==="
+          pwd
+          echo ""
+          echo "=== public/data の構造 ==="
+          ls -la public/data/ || echo "public/data が見つかりません"
+          echo ""
+          echo "=== public/data/repositories の構造 ==="
+          if [ -d "public/data/repositories" ]; then
+            ls -la public/data/repositories/ || echo "public/data/repositories は空です"
+            echo ""
+            echo "=== CSVファイル一覧 ==="
+            find public/data/repositories -type f -name "*.csv" | head -10
+          else
+            echo "public/data/repositories ディレクトリが見つかりません"
+            echo ""
+            echo "=== public/data 配下の全ファイル ==="
+            find public/data -type f | head -20
+          fi
+
+      - name: Issue同期を実行
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          TARGET_USER: ${{ github.event.inputs.target_user || 'KenichiroArai' }}
+          REPOSITORY: ${{ github.repository }}
+          PROJECT_NUMBER: ${{ github.event.inputs.project_number || '15' }}
+          PROJECT_STATUS_FIELD: ${{ github.event.inputs.project_status_field || 'Status' }}
+          INCLUDE_PRIVATE: ${{ github.event.inputs.include_private || 'true' }}
+          INCLUDE_ARCHIVED: ${{ github.event.inputs.include_archived || 'true' }}
+          CSV_INPUT_PATH: ../../../public/data/repositories
+        run: |
+          cd .github/scripts/repo-full-sync
+          echo "=== CSV_INPUT_PATH の確認 ==="
+          echo "CSV_INPUT_PATH: $CSV_INPUT_PATH"
+          echo "現在のディレクトリ: $(pwd)"
+          echo "解決後のパス: $(cd ../../../ && pwd)/public/data/repositories"
+          if [ -d "../../../public/data/repositories" ]; then
+            echo "✅ ../../../public/data/repositories ディレクトリが存在します"
+            find ../../../public/data/repositories -type f -name "*.csv" | head -5
+          else
+            echo "❌ ../../../public/data/repositories ディレクトリが見つかりません"
+            echo "=== 代替パスの確認 ==="
+            ls -la ../../../public/data/ || echo "public/data が見つかりません"
+          fi
+          echo ""
+          node dist/index.js sync-issues
+
+  # ステップ4: 完了通知
+  notify-completion:
+    name: 完了通知
+    needs: [build-and-prepare, export-csv, sync-issues]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 結果を確認
+        run: |
+          echo "🎉 完全同期が完了しました！"
+          echo "## 📊 実行結果" >> $GITHUB_STEP_SUMMARY
+          echo "| ジョブ | 結果 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CSV出力 | ${{ needs.export-csv.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Issue同期 | ${{ needs.sync-issues.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**ワークフローバージョン:** \`${{ needs.build-and-prepare.outputs.workflow-version }}\`" >> $GITHUB_STEP_SUMMARY

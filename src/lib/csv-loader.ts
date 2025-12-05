@@ -309,6 +309,7 @@ export interface TimeSeriesData {
   totalOpenIssues: number;
   totalClosedIssues: number;
   totalIssues: number;
+  totalCommits: number;
   totalRepos: number;
   exportedAtJst: string;
 }
@@ -395,6 +396,7 @@ export async function loadTimeSeriesData(): Promise<TimeSeriesData[]> {
         const totalOpenIssues = summaries.reduce((sum, repo) => sum + repo.openIssues, 0);
         const totalClosedIssues = summaries.reduce((sum, repo) => sum + repo.closedIssues, 0);
         const totalIssues = totalOpenIssues + totalClosedIssues;
+        const totalCommits = summaries.reduce((sum, repo) => sum + repo.commits, 0);
         const exportedAtJst = summaries[0]?.exportedAtJst || '';
 
         timeSeriesData.push({
@@ -404,6 +406,7 @@ export async function loadTimeSeriesData(): Promise<TimeSeriesData[]> {
           totalOpenIssues,
           totalClosedIssues,
           totalIssues,
+          totalCommits,
           totalRepos: summaries.length,
           exportedAtJst,
         });

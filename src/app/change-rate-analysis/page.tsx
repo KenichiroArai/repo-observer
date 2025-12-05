@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { loadTimeSeriesData } from '../../lib/csv-loader';
 import { TimeSeriesData } from '../../lib/csv-loader';
 import IssueTimeSeriesChart from '../../components/IssueTimeSeriesChart';
+import CommitTimeSeriesChart from '../../components/CommitTimeSeriesChart';
 import IssueChangeRateChart, { IssueChangeRateData } from '../../components/IssueChangeRateChart';
+import CommitChangeRateChart, { CommitChangeRateData } from '../../components/CommitChangeRateChart';
 
 export default function ChangeRateAnalysisPage() {
   const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
   const [issueChangeRateData, setIssueChangeRateData] = useState<IssueChangeRateData[]>([]);
+  const [commitChangeRateData, setCommitChangeRateData] = useState<CommitChangeRateData[]>([]);
   const [timeSeriesLoading, setTimeSeriesLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +22,16 @@ export default function ChangeRateAnalysisPage() {
 
         // Issue変化率を計算
         const issueChangeRates: IssueChangeRateData[] = [];
+        const commitChangeRates: CommitChangeRateData[] = [];
         for (let i = 1; i < timeSeries.length; i++) {
           const current = timeSeries[i];
           const previous = timeSeries[i - 1];
 
           const totalIssuesChangeRate = previous.totalIssues > 0
             ? ((current.totalIssues - previous.totalIssues) / previous.totalIssues) * 100
+            : 0;
+          const commitsChangeRate = previous.totalCommits > 0
+            ? ((current.totalCommits - previous.totalCommits) / previous.totalCommits) * 100
             : 0;
           const openIssuesChangeRate = previous.totalOpenIssues > 0
             ? ((current.totalOpenIssues - previous.totalOpenIssues) / previous.totalOpenIssues) * 100
@@ -39,8 +46,14 @@ export default function ChangeRateAnalysisPage() {
             openIssuesChangeRate: parseFloat(openIssuesChangeRate.toFixed(2)),
             closedIssuesChangeRate: parseFloat(closedIssuesChangeRate.toFixed(2)),
           });
+
+          commitChangeRates.push({
+            date: current.date,
+            commitsChangeRate: parseFloat(commitsChangeRate.toFixed(2)),
+          });
         }
         setIssueChangeRateData(issueChangeRates);
+        setCommitChangeRateData(commitChangeRates);
       } catch (error) {
         console.error('時系列データ読み込みエラー:', error);
       } finally {
@@ -63,6 +76,9 @@ export default function ChangeRateAnalysisPage() {
   const totalIssuesChangeRate = latestData && previousData
     ? calculateChangeRate(latestData.totalIssues, previousData.totalIssues)
     : 0;
+  const commitsChangeRate = latestData && previousData
+    ? calculateChangeRate(latestData.totalCommits, previousData.totalCommits)
+    : 0;
   const openIssuesChangeRate = latestData && previousData
     ? calculateChangeRate(latestData.totalOpenIssues, previousData.totalOpenIssues)
     : 0;
@@ -83,12 +99,12 @@ export default function ChangeRateAnalysisPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">📊 Issue変化率分析</h1>
+      <h1 className="text-4xl font-bold text-gray-900 mb-4">📊 Issue・コミット変化率分析</h1>
       <p className="text-lg text-gray-600 mb-8">
-        Issue数を中心とした活動状況の時系列変化率を分析します。前日比による成長率や減少率を確認できます。
+        Issue数とコミット数を中心とした活動状況の時系列変化率を分析します。前日比による成長率や減少率を確認できます。
       </p>
 
-      {/* Issue関連の指標 - 3カラムレイアウト */}
+      {/* Issue関連の指標 */}
       {latestData && previousData && (
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">🎯 Issue状況（前日比）</h2>
@@ -181,6 +197,36 @@ export default function ChangeRateAnalysisPage() {
         </div>
       )}
 
+      {/* コミット関連の指標 */}
+      {latestData && previousData && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">💻 コミット状況（前日比）</h2>
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-lg p-6 border-2 border-blue-300">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-600">総コミット数</p>
+                <span className="text-2xl">💻</span>
+              </div>
+              <p className="text-4xl font-bold text-blue-600 mb-3">{latestData.totalCommits.toLocaleString()}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-xl font-bold ${commitsChangeRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {commitsChangeRate >= 0 ? '↑' : '↓'} {Math.abs(commitsChangeRate).toFixed(2)}%
+                </span>
+                <span className="text-sm text-gray-600">
+                  ({commitsChangeRate >= 0 ? '+' : ''}{(latestData.totalCommits - previousData.totalCommits).toLocaleString()})
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                {previousData.totalCommits.toLocaleString()} → {latestData.totalCommits.toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            ※ コミット数の増加は開発活動が活発であることを示します。
+          </p>
+        </div>
+      )}
+
       {/* Issue時系列推移 */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">📈 Issue時系列推移</h2>
@@ -196,6 +242,30 @@ export default function ChangeRateAnalysisPage() {
           </div>
         ) : (
           <IssueTimeSeriesChart data={timeSeriesData} />
+        )}
+        {timeSeriesData.length > 0 && (
+          <div className="mt-4 text-sm text-gray-600">
+            <p>データ期間: {timeSeriesData[0]?.date} ～ {timeSeriesData[timeSeriesData.length - 1]?.date}</p>
+            <p>最新データ取得日時: {timeSeriesData[timeSeriesData.length - 1]?.exportedAtJst}</p>
+          </div>
+        )}
+      </div>
+
+      {/* コミット時系列推移 */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">💻 コミット時系列推移</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          コミット数の時系列推移を表示します。総コミット数の日付ごとの変化を確認できます。
+        </p>
+        {timeSeriesLoading ? (
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-4 text-gray-600">時系列データを読み込んでいます...</p>
+            </div>
+          </div>
+        ) : (
+          <CommitTimeSeriesChart data={timeSeriesData} />
         )}
         {timeSeriesData.length > 0 && (
           <div className="mt-4 text-sm text-gray-600">
@@ -224,6 +294,30 @@ export default function ChangeRateAnalysisPage() {
         {issueChangeRateData.length > 0 && (
           <div className="mt-4 text-sm text-gray-600">
             <p>変化率計算期間: {issueChangeRateData[0]?.date} ～ {issueChangeRateData[issueChangeRateData.length - 1]?.date}</p>
+            <p className="text-xs text-gray-500 mt-1">※ 変化率は前日比で計算されています</p>
+          </div>
+        )}
+      </div>
+
+      {/* コミット変化率チャート */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">💻 コミット変化率の推移</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          前日比によるコミット変化率を表示します。総コミット数の成長率や減少率を確認できます。
+        </p>
+        {timeSeriesLoading ? (
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-4 text-gray-600">変化率データを計算しています...</p>
+            </div>
+          </div>
+        ) : (
+          <CommitChangeRateChart data={commitChangeRateData} />
+        )}
+        {commitChangeRateData.length > 0 && (
+          <div className="mt-4 text-sm text-gray-600">
+            <p>変化率計算期間: {commitChangeRateData[0]?.date} ～ {commitChangeRateData[commitChangeRateData.length - 1]?.date}</p>
             <p className="text-xs text-gray-500 mt-1">※ 変化率は前日比で計算されています</p>
           </div>
         )}
@@ -317,6 +411,62 @@ export default function ChangeRateAnalysisPage() {
           <div className="mt-4 text-xs text-gray-500">
             <p>※ 最新のデータが一番上に表示されます</p>
             <p>※ 変化率の色: 赤=増加、緑=減少（未解決Issueとクローズ済みIssueで意味が異なります）</p>
+          </div>
+        )}
+      </div>
+
+      {/* コミット変化率詳細テーブル */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">💻 コミット変化率詳細一覧</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          日付ごとのコミット変化率の詳細データを一覧表示します。各指標の具体的な数値と変化率を確認できます。
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  日付
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  コミット数
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  変化率
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {timeSeriesData.slice().reverse().map((item, index) => {
+                const changeRateItem = commitChangeRateData.slice().reverse().find(cr => cr.date === item.date);
+                return (
+                  <tr key={item.date} className={index === 0 ? 'bg-blue-50' : ''}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {item.date}
+                      {index === 0 && <span className="ml-2 text-xs text-blue-600 font-semibold">(最新)</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600 font-semibold">
+                      {item.totalCommits.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                      {changeRateItem ? (
+                        <span className={`font-semibold ${changeRateItem.commitsChangeRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {changeRateItem.commitsChangeRate >= 0 ? '↑' : '↓'} {Math.abs(changeRateItem.commitsChangeRate).toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {timeSeriesData.length > 0 && (
+          <div className="mt-4 text-xs text-gray-500">
+            <p>※ 最新のデータが一番上に表示されます</p>
+            <p>※ コミット数の増加は緑色、減少は赤色で表示されます</p>
           </div>
         )}
       </div>

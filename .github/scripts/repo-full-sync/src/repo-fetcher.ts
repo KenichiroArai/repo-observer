@@ -118,6 +118,16 @@ export class RepoFetcher {
         closedIssues = 0;
       }
 
+      // コミット数を取得
+      let commits = 0;
+      try {
+        commits = await this.fetchCommitsCount(owner, repo, data.default_branch);
+      } catch (error) {
+        // エラーが発生した場合は0として扱う
+        console.warn(`コミット数取得エラー (${owner}/${repo}):`, error);
+        commits = 0;
+      }
+
       return {
         name: data.name,
         fullName: data.full_name,
@@ -127,6 +137,7 @@ export class RepoFetcher {
         watchers: data.watchers_count,
         openIssues: data.open_issues_count,
         closedIssues: closedIssues,
+        commits: commits,
         size: data.size,
         language: data.language || '不明',
         license: data.license?.name || 'ライセンスなし',
@@ -190,6 +201,41 @@ export class RepoFetcher {
         page++;
       } catch (error) {
         console.warn(`クローズしたIssue取得エラー (${owner}/${repo}, page ${page}):`, error);
+        break;
+      }
+    }
+
+    return count;
+  }
+
+  /**
+   * コミット数を取得
+   */
+  private async fetchCommitsCount(owner: string, repo: string, branch: string): Promise<number> {
+    let count = 0;
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      try {
+        const response = await this.octokit.repos.listCommits({
+          owner,
+          repo,
+          sha: branch,
+          per_page: perPage,
+          page: page
+        });
+
+        count += response.data.length;
+
+        // 次のページがあるか確認
+        if (response.data.length < perPage) {
+          break;
+        }
+
+        page++;
+      } catch (error) {
+        console.warn(`コミット取得エラー (${owner}/${repo}, page ${page}):`, error);
         break;
       }
     }

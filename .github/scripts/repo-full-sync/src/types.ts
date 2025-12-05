@@ -12,6 +12,7 @@ export interface RepositoryInfo {
   watchers: number;
   openIssues: number;
   closedIssues: number;
+  commits: number;
   size: number; // KB単位
   language: string;
   license: string;

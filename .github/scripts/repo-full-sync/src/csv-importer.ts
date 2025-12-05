@@ -17,6 +17,7 @@ interface CsvRow {
   watchers: string;
   openIssues: string;
   closedIssues?: string;
+  commits?: string;
   sizeDisplay: string;
   language: string;
   license: string;
@@ -50,6 +51,7 @@ const HEADER_MAP: Record<string, keyof CsvRow> = {
   'ウォッチャー数': 'watchers',
   '未解決Issue数': 'openIssues',
   'クローズ済みIssue数': 'closedIssues',
+  'コミット数': 'commits',
   'サイズ': 'sizeDisplay',
   '使用言語': 'language',
   'ライセンス': 'license',
@@ -211,6 +213,7 @@ export class CsvImporter {
       watchers: this.parseNumber(row.watchers),
       openIssues: this.parseNumber(row.openIssues),
       closedIssues: row.closedIssues ? this.parseNumber(row.closedIssues) : 0,
+      commits: row.commits ? this.parseNumber(row.commits) : 0,
       size: this.parseSize(row.sizeDisplay),
       language: row.language || '未設定',
       license: row.license || '未設定',

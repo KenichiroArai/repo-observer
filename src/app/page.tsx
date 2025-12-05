@@ -51,6 +51,7 @@ export default function Home() {
   const totalOpenIssues = data.reduce((sum, repo) => sum + (Number(repo.openIssues) || 0), 0);
   const totalClosedIssues = data.reduce((sum, repo) => sum + (Number(repo.closedIssues) || 0), 0);
   const totalIssues = totalOpenIssues + totalClosedIssues;
+  const totalCommits = data.reduce((sum, repo) => sum + (Number(repo.commits) || 0), 0);
   const openIssuesPercentage = totalIssues > 0 ? (totalOpenIssues / totalIssues * 100) : 0;
   const closedIssuesPercentage = totalIssues > 0 ? (totalClosedIssues / totalIssues * 100) : 0;
 
@@ -95,7 +96,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -104,6 +105,18 @@ export default function Home() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">総Issue数</p>
               <p className="text-2xl font-semibold text-gray-900">{totalIssues.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 border-2 border-blue-300">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <span className="text-3xl">💻</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">総コミット数</p>
+              <p className="text-2xl font-semibold text-blue-600">{totalCommits.toLocaleString()}</p>
             </div>
           </div>
         </div>

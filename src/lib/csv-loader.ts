@@ -42,6 +42,7 @@ export interface RepositorySummary {
   forks: number;
   openIssues: number;
   closedIssues: number;
+  commits: number;
   language: string;
   pushedDate: string;
   url: string;
@@ -89,6 +90,7 @@ const SUMMARY_HEADER_MAP: Record<string, keyof RepositorySummary> = {
   'フォーク数': 'forks',
   '未解決Issue': 'openIssues',
   'クローズ済みIssue': 'closedIssues',
+  'コミット数': 'commits',
   '言語': 'language',
   '最終Push': 'pushedDate',
   'URL': 'url',
@@ -291,6 +293,7 @@ export async function loadLatestSummary(): Promise<RepositorySummary[]> {
         forks: parseNumber(mapped.forks || '0'),
         openIssues: parseNumber(mapped.openIssues || '0'),
         closedIssues: parseNumber(mapped.closedIssues || '0'),
+        commits: parseNumber(mapped.commits || '0'),
       } as RepositorySummary;
     });
   } catch (error) {
@@ -369,6 +372,7 @@ export async function loadSummaryByDate(date: string): Promise<RepositorySummary
         forks: parseNumber(mapped.forks || '0'),
         openIssues: parseNumber(mapped.openIssues || '0'),
         closedIssues: parseNumber(mapped.closedIssues || '0'),
+        commits: parseNumber(mapped.commits || '0'),
       } as RepositorySummary;
     });
   } catch (error) {

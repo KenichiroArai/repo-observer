@@ -196,6 +196,11 @@ async function checkFileExists(basePath: string, type: 'repositories' | 'reposit
       return true;
     }
 
+    // 404はファイルが存在しないという正常な状態なので、falseを返すだけ
+    if (response.status === 404) {
+      return false;
+    }
+
     // HEADが405（Method Not Allowed）や501（Not Implemented）を返した場合、
     // GETリクエストで確認を試みる
     if (response.status === 405 || response.status === 501) {
@@ -211,6 +216,7 @@ async function checkFileExists(basePath: string, type: 'repositories' | 'reposit
 
     return false;
   } catch {
+    // エラーは無視（ファイルが存在しない可能性が高い）
     return false;
   }
 }
@@ -221,6 +227,9 @@ async function discoverLatestFiles(basePath: string, type: 'repositories' | 'rep
 
   // 現在から過去30日間のファイルを検出
   const today = new Date();
+  const MAX_CONSECUTIVE_MISSING = 7; // 連続して7日間ファイルが見つからない場合は早期終了
+  let consecutiveMissing = 0;
+  let foundAnyFile = false;
 
   for (let i = 0; i < 30; i++) {
     const checkDate = new Date(today);
@@ -231,6 +240,9 @@ async function discoverLatestFiles(basePath: string, type: 'repositories' | 'rep
     // ファイルの存在を確認
     const exists = await checkFileExists(basePath, type, dateStr);
     if (exists) {
+      foundAnyFile = true;
+      consecutiveMissing = 0; // ファイルが見つかったらカウンタをリセット
+
       const dateObj = parseDate(dateStr);
       const year = String(dateObj.getFullYear());
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -245,6 +257,12 @@ async function discoverLatestFiles(basePath: string, type: 'repositories' | 'rep
         filename: filename,
         path: `/data/${type}/${year}/${month}/${filename}`
       });
+    } else {
+      consecutiveMissing++;
+      // 一度でもファイルが見つかった後、連続して見つからない日が一定数続いた場合は早期終了
+      if (foundAnyFile && consecutiveMissing >= MAX_CONSECUTIVE_MISSING) {
+        break;
+      }
     }
   }
 

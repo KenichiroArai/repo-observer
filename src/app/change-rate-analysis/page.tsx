@@ -20,36 +20,28 @@ export default function ChangeRateAnalysisPage() {
         const timeSeries = await loadTimeSeriesData();
         setTimeSeriesData(timeSeries);
 
-        // Issue変化率を計算
+        // Issue差分を計算
         const issueChangeRates: IssueChangeRateData[] = [];
         const commitChangeRates: CommitChangeRateData[] = [];
         for (let i = 1; i < timeSeries.length; i++) {
           const current = timeSeries[i];
           const previous = timeSeries[i - 1];
 
-          const totalIssuesChangeRate = previous.totalIssues > 0
-            ? ((current.totalIssues - previous.totalIssues) / previous.totalIssues) * 100
-            : 0;
-          const commitsChangeRate = previous.totalCommits > 0
-            ? ((current.totalCommits - previous.totalCommits) / previous.totalCommits) * 100
-            : 0;
-          const openIssuesChangeRate = previous.totalOpenIssues > 0
-            ? ((current.totalOpenIssues - previous.totalOpenIssues) / previous.totalOpenIssues) * 100
-            : 0;
-          const closedIssuesChangeRate = previous.totalClosedIssues > 0
-            ? ((current.totalClosedIssues - previous.totalClosedIssues) / previous.totalClosedIssues) * 100
-            : 0;
+          const totalIssuesChange = current.totalIssues - previous.totalIssues;
+          const commitsChange = current.totalCommits - previous.totalCommits;
+          const openIssuesChange = current.totalOpenIssues - previous.totalOpenIssues;
+          const closedIssuesChange = current.totalClosedIssues - previous.totalClosedIssues;
 
           issueChangeRates.push({
             date: current.date,
-            totalIssuesChangeRate: parseFloat(totalIssuesChangeRate.toFixed(2)),
-            openIssuesChangeRate: parseFloat(openIssuesChangeRate.toFixed(2)),
-            closedIssuesChangeRate: parseFloat(closedIssuesChangeRate.toFixed(2)),
+            totalIssuesChange: totalIssuesChange,
+            openIssuesChange: openIssuesChange,
+            closedIssuesChange: closedIssuesChange,
           });
 
           commitChangeRates.push({
             date: current.date,
-            commitsChangeRate: parseFloat(commitsChangeRate.toFixed(2)),
+            commitsChange: commitsChange,
           });
         }
         setIssueChangeRateData(issueChangeRates);
@@ -67,41 +59,22 @@ export default function ChangeRateAnalysisPage() {
   const latestData = timeSeriesData.length > 0 ? timeSeriesData[timeSeriesData.length - 1] : null;
   const previousData = timeSeriesData.length > 1 ? timeSeriesData[timeSeriesData.length - 2] : null;
 
-  const calculateChangeRate = (current: number, previous: number) => {
-    if (previous === 0) return 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  // Issue関連の変化率
-  const totalIssuesChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalIssues, previousData.totalIssues)
-    : 0;
-  const commitsChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalCommits, previousData.totalCommits)
-    : 0;
-  const openIssuesChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalOpenIssues, previousData.totalOpenIssues)
-    : 0;
-  const closedIssuesChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalClosedIssues, previousData.totalClosedIssues)
-    : 0;
-
-  // その他の指標の変化率
+  // その他の指標の変化率（表示用に残す）
   const starsChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalStars, previousData.totalStars)
+    ? ((latestData.totalStars - previousData.totalStars) / previousData.totalStars) * 100
     : 0;
   const forksChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalForks, previousData.totalForks)
+    ? ((latestData.totalForks - previousData.totalForks) / previousData.totalForks) * 100
     : 0;
   const reposChangeRate = latestData && previousData
-    ? calculateChangeRate(latestData.totalRepos, previousData.totalRepos)
+    ? ((latestData.totalRepos - previousData.totalRepos) / previousData.totalRepos) * 100
     : 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">📊 Issue・コミット変化率分析</h1>
+      <h1 className="text-4xl font-bold text-gray-900 mb-4">📊 Issue・コミット変化分析</h1>
       <p className="text-lg text-gray-600 mb-8">
-        Issue数とコミット数を中心とした活動状況の時系列変化率を分析します。前日比による成長率や減少率を確認できます。
+        Issue数とコミット数を中心とした活動状況の時系列変化を分析します。日々の増減を確認できます。
       </p>
 
       {/* Issue関連の指標 */}
@@ -117,11 +90,8 @@ export default function ChangeRateAnalysisPage() {
               </div>
               <p className="text-4xl font-bold text-gray-900 mb-3">{latestData.totalIssues.toLocaleString()}</p>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-xl font-bold ${totalIssuesChangeRate >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {totalIssuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(totalIssuesChangeRate).toFixed(2)}%
-                </span>
-                <span className="text-sm text-gray-600">
-                  ({totalIssuesChangeRate >= 0 ? '+' : ''}{(latestData.totalIssues - previousData.totalIssues).toLocaleString()})
+                <span className={`text-xl font-bold ${(latestData.totalIssues - previousData.totalIssues) >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {(latestData.totalIssues - previousData.totalIssues) >= 0 ? '↑' : '↓'} {(latestData.totalIssues - previousData.totalIssues) >= 0 ? '+' : ''}{(latestData.totalIssues - previousData.totalIssues).toLocaleString()}
                 </span>
               </div>
               <p className="text-xs text-gray-500">
@@ -137,11 +107,8 @@ export default function ChangeRateAnalysisPage() {
               </div>
               <p className="text-4xl font-bold text-gray-900 mb-3">{latestData.totalOpenIssues.toLocaleString()}</p>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-xl font-bold ${openIssuesChangeRate >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {openIssuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(openIssuesChangeRate).toFixed(2)}%
-                </span>
-                <span className="text-sm text-gray-600">
-                  ({openIssuesChangeRate >= 0 ? '+' : ''}{(latestData.totalOpenIssues - previousData.totalOpenIssues).toLocaleString()})
+                <span className={`text-xl font-bold ${(latestData.totalOpenIssues - previousData.totalOpenIssues) >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {(latestData.totalOpenIssues - previousData.totalOpenIssues) >= 0 ? '↑' : '↓'} {(latestData.totalOpenIssues - previousData.totalOpenIssues) >= 0 ? '+' : ''}{(latestData.totalOpenIssues - previousData.totalOpenIssues).toLocaleString()}
                 </span>
               </div>
               <p className="text-xs text-gray-500">
@@ -168,11 +135,8 @@ export default function ChangeRateAnalysisPage() {
               </div>
               <p className="text-4xl font-bold text-gray-900 mb-3">{latestData.totalClosedIssues.toLocaleString()}</p>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-xl font-bold ${closedIssuesChangeRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {closedIssuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(closedIssuesChangeRate).toFixed(2)}%
-                </span>
-                <span className="text-sm text-gray-600">
-                  ({closedIssuesChangeRate >= 0 ? '+' : ''}{(latestData.totalClosedIssues - previousData.totalClosedIssues).toLocaleString()})
+                <span className={`text-xl font-bold ${(latestData.totalClosedIssues - previousData.totalClosedIssues) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {(latestData.totalClosedIssues - previousData.totalClosedIssues) >= 0 ? '↑' : '↓'} {(latestData.totalClosedIssues - previousData.totalClosedIssues) >= 0 ? '+' : ''}{(latestData.totalClosedIssues - previousData.totalClosedIssues).toLocaleString()}
                 </span>
               </div>
               <p className="text-xs text-gray-500">
@@ -209,11 +173,8 @@ export default function ChangeRateAnalysisPage() {
               </div>
               <p className="text-4xl font-bold text-blue-600 mb-3">{latestData.totalCommits.toLocaleString()}</p>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-xl font-bold ${commitsChangeRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {commitsChangeRate >= 0 ? '↑' : '↓'} {Math.abs(commitsChangeRate).toFixed(2)}%
-                </span>
-                <span className="text-sm text-gray-600">
-                  ({commitsChangeRate >= 0 ? '+' : ''}{(latestData.totalCommits - previousData.totalCommits).toLocaleString()})
+                <span className={`text-xl font-bold ${(latestData.totalCommits - previousData.totalCommits) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {(latestData.totalCommits - previousData.totalCommits) >= 0 ? '↑' : '↓'} {(latestData.totalCommits - previousData.totalCommits) >= 0 ? '+' : ''}{(latestData.totalCommits - previousData.totalCommits).toLocaleString()}
                 </span>
               </div>
               <p className="text-xs text-gray-500">
@@ -275,11 +236,11 @@ export default function ChangeRateAnalysisPage() {
         )}
       </div>
 
-      {/* Issue変化率チャート */}
+      {/* Issue差分チャート */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">📊 Issue変化率の推移</h2>
+        <h2 className="text-xl font-semibold mb-4">📊 Issue差分の推移</h2>
         <p className="text-sm text-gray-600 mb-4">
-          前日比によるIssue変化率を表示します。総Issue数、未解決Issue、クローズ済みIssueの成長率や減少率を確認できます。
+          前日比によるIssue差分を表示します。総Issue数、未解決Issue、クローズ済みIssueの日々の増減を確認できます。
         </p>
         {timeSeriesLoading ? (
           <div className="h-[400px] flex items-center justify-center">
@@ -293,17 +254,17 @@ export default function ChangeRateAnalysisPage() {
         )}
         {issueChangeRateData.length > 0 && (
           <div className="mt-4 text-sm text-gray-600">
-            <p>変化率計算期間: {issueChangeRateData[0]?.date} ～ {issueChangeRateData[issueChangeRateData.length - 1]?.date}</p>
-            <p className="text-xs text-gray-500 mt-1">※ 変化率は前日比で計算されています</p>
+            <p>差分計算期間: {issueChangeRateData[0]?.date} ～ {issueChangeRateData[issueChangeRateData.length - 1]?.date}</p>
+            <p className="text-xs text-gray-500 mt-1">※ 差分は前日比で計算されています</p>
           </div>
         )}
       </div>
 
-      {/* コミット変化率チャート */}
+      {/* コミット差分チャート */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">💻 コミット変化率の推移</h2>
+        <h2 className="text-xl font-semibold mb-4">💻 コミット差分の推移</h2>
         <p className="text-sm text-gray-600 mb-4">
-          前日比によるコミット変化率を表示します。総コミット数の成長率や減少率を確認できます。
+          前日比によるコミット差分を表示します。総コミット数の日々の増減を確認できます。
         </p>
         {timeSeriesLoading ? (
           <div className="h-[400px] flex items-center justify-center">
@@ -317,17 +278,17 @@ export default function ChangeRateAnalysisPage() {
         )}
         {commitChangeRateData.length > 0 && (
           <div className="mt-4 text-sm text-gray-600">
-            <p>変化率計算期間: {commitChangeRateData[0]?.date} ～ {commitChangeRateData[commitChangeRateData.length - 1]?.date}</p>
-            <p className="text-xs text-gray-500 mt-1">※ 変化率は前日比で計算されています</p>
+            <p>差分計算期間: {commitChangeRateData[0]?.date} ～ {commitChangeRateData[commitChangeRateData.length - 1]?.date}</p>
+            <p className="text-xs text-gray-500 mt-1">※ 差分は前日比で計算されています</p>
           </div>
         )}
       </div>
 
-      {/* Issue変化率詳細テーブル */}
+      {/* Issue差分詳細テーブル */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">📋 Issue変化率詳細一覧</h2>
+        <h2 className="text-xl font-semibold mb-4">📋 Issue差分詳細一覧</h2>
         <p className="text-sm text-gray-600 mb-4">
-          日付ごとのIssue変化率の詳細データを一覧表示します。各指標の具体的な数値と変化率を確認できます。
+          日付ごとのIssue差分の詳細データを一覧表示します。各指標の具体的な数値と増減を確認できます。
         </p>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -340,19 +301,19 @@ export default function ChangeRateAnalysisPage() {
                   総Issue数
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  変化率
+                  差分
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   未解決Issue
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  変化率
+                  差分
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   クローズ済みIssue
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  変化率
+                  差分
                 </th>
               </tr>
             </thead>
@@ -370,8 +331,8 @@ export default function ChangeRateAnalysisPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                       {changeRateItem ? (
-                        <span className={`font-semibold ${changeRateItem.totalIssuesChangeRate >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {changeRateItem.totalIssuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(changeRateItem.totalIssuesChangeRate).toFixed(2)}%
+                        <span className={`font-semibold ${changeRateItem.totalIssuesChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {changeRateItem.totalIssuesChange >= 0 ? '↑' : '↓'} {changeRateItem.totalIssuesChange >= 0 ? '+' : ''}{changeRateItem.totalIssuesChange.toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -382,8 +343,8 @@ export default function ChangeRateAnalysisPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                       {changeRateItem ? (
-                        <span className={`font-semibold ${changeRateItem.openIssuesChangeRate >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {changeRateItem.openIssuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(changeRateItem.openIssuesChangeRate).toFixed(2)}%
+                        <span className={`font-semibold ${changeRateItem.openIssuesChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {changeRateItem.openIssuesChange >= 0 ? '↑' : '↓'} {changeRateItem.openIssuesChange >= 0 ? '+' : ''}{changeRateItem.openIssuesChange.toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -394,8 +355,8 @@ export default function ChangeRateAnalysisPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                       {changeRateItem ? (
-                        <span className={`font-semibold ${changeRateItem.closedIssuesChangeRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {changeRateItem.closedIssuesChangeRate >= 0 ? '↑' : '↓'} {Math.abs(changeRateItem.closedIssuesChangeRate).toFixed(2)}%
+                        <span className={`font-semibold ${changeRateItem.closedIssuesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {changeRateItem.closedIssuesChange >= 0 ? '↑' : '↓'} {changeRateItem.closedIssuesChange >= 0 ? '+' : ''}{changeRateItem.closedIssuesChange.toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -410,16 +371,16 @@ export default function ChangeRateAnalysisPage() {
         {timeSeriesData.length > 0 && (
           <div className="mt-4 text-xs text-gray-500">
             <p>※ 最新のデータが一番上に表示されます</p>
-            <p>※ 変化率の色: 赤=増加、緑=減少（未解決Issueとクローズ済みIssueで意味が異なります）</p>
+            <p>※ 差分の色: 赤=増加、緑=減少（未解決Issueとクローズ済みIssueで意味が異なります）</p>
           </div>
         )}
       </div>
 
-      {/* コミット変化率詳細テーブル */}
+      {/* コミット差分詳細テーブル */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">💻 コミット変化率詳細一覧</h2>
+        <h2 className="text-xl font-semibold mb-4">💻 コミット差分詳細一覧</h2>
         <p className="text-sm text-gray-600 mb-4">
-          日付ごとのコミット変化率の詳細データを一覧表示します。各指標の具体的な数値と変化率を確認できます。
+          日付ごとのコミット差分の詳細データを一覧表示します。各指標の具体的な数値と増減を確認できます。
         </p>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -432,7 +393,7 @@ export default function ChangeRateAnalysisPage() {
                   コミット数
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  変化率
+                  差分
                 </th>
               </tr>
             </thead>
@@ -450,8 +411,8 @@ export default function ChangeRateAnalysisPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                       {changeRateItem ? (
-                        <span className={`font-semibold ${changeRateItem.commitsChangeRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {changeRateItem.commitsChangeRate >= 0 ? '↑' : '↓'} {Math.abs(changeRateItem.commitsChangeRate).toFixed(2)}%
+                        <span className={`font-semibold ${changeRateItem.commitsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {changeRateItem.commitsChange >= 0 ? '↑' : '↓'} {changeRateItem.commitsChange >= 0 ? '+' : ''}{changeRateItem.commitsChange.toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>

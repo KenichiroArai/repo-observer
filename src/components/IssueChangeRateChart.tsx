@@ -5,9 +5,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 export interface IssueChangeRateData {
   date: string;
-  totalIssuesChangeRate: number;
-  openIssuesChangeRate: number;
-  closedIssuesChangeRate: number;
+  totalIssuesChange: number;
+  openIssuesChange: number;
+  closedIssuesChange: number;
 }
 
 interface IssueChangeRateChartProps {
@@ -40,37 +40,37 @@ function IssueChangeRateChartComponent({ data }: IssueChangeRateChartProps) {
           height={80}
         />
         <YAxis
-          label={{ value: '変化率 (%)', angle: -90, position: 'insideLeft' }}
+          label={{ value: '差分', angle: -90, position: 'insideLeft' }}
         />
         <Tooltip
           formatter={(value: number) => {
             const sign = value >= 0 ? '+' : '';
-            return [`${sign}${value.toFixed(2)}%`, ''];
+            return [`${sign}${value.toLocaleString()}`, ''];
           }}
           labelFormatter={(label) => `日付: ${label}`}
         />
         <Legend />
         <Line
           type="monotone"
-          dataKey="totalIssuesChangeRate"
+          dataKey="totalIssuesChange"
           stroke="#8b5cf6"
-          name="総Issue数変化率"
+          name="総Issue数差分"
           strokeWidth={3}
           dot={{ r: 5 }}
         />
         <Line
           type="monotone"
-          dataKey="openIssuesChangeRate"
+          dataKey="openIssuesChange"
           stroke="#ef4444"
-          name="未解決Issue変化率"
+          name="未解決Issue差分"
           strokeWidth={2}
           dot={{ r: 4 }}
         />
         <Line
           type="monotone"
-          dataKey="closedIssuesChangeRate"
+          dataKey="closedIssuesChange"
           stroke="#10b981"
-          name="クローズ済みIssue変化率"
+          name="クローズ済みIssue差分"
           strokeWidth={2}
           dot={{ r: 4 }}
         />

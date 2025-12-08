@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 export interface CommitChangeRateData {
   date: string;
-  commitsChangeRate: number;
+  commitsChange: number;
 }
 
 interface CommitChangeRateChartProps {
@@ -38,21 +38,21 @@ function CommitChangeRateChartComponent({ data }: CommitChangeRateChartProps) {
           height={80}
         />
         <YAxis
-          label={{ value: '変化率 (%)', angle: -90, position: 'insideLeft' }}
+          label={{ value: '差分', angle: -90, position: 'insideLeft' }}
         />
         <Tooltip
           formatter={(value: number) => {
             const sign = value >= 0 ? '+' : '';
-            return [`${sign}${value.toFixed(2)}%`, ''];
+            return [`${sign}${value.toLocaleString()}`, ''];
           }}
           labelFormatter={(label) => `日付: ${label}`}
         />
         <Legend />
         <Line
           type="monotone"
-          dataKey="commitsChangeRate"
+          dataKey="commitsChange"
           stroke="#3b82f6"
-          name="コミット数変化率"
+          name="コミット数差分"
           strokeWidth={3}
           dot={{ r: 5 }}
         />

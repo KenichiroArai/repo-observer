@@ -158,26 +158,130 @@ interface CsvFileList {
 
 // 利用可能なCSVファイルのリストをキャッシュ
 let cachedFileList: CsvFileList | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5分間キャッシュ
+
+// 日付文字列からDateオブジェクトを生成（YYYY-MM-DD形式）
+function parseDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// 日付をYYYY-MM-DD形式の文字列に変換
+function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// 指定した日付のCSVファイルが存在するか確認
+async function checkFileExists(basePath: string, type: 'repositories' | 'repositories-summary', date: string): Promise<boolean> {
+  const dateObj = parseDate(date);
+  const year = String(dateObj.getFullYear());
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const filename = type === 'repositories'
+    ? `repositories-${date}.csv`
+    : `repositories-summary-${date}.csv`;
+  const filePath = `${basePath}/data/${type}/${year}/${month}/${filename}`;
+
+  try {
+    // HEADリクエストでファイルの存在を確認（GitHub Pagesでサポートされているはず）
+    const response = await fetch(filePath, {
+      method: 'HEAD',
+      cache: 'no-cache' // キャッシュを無効化して常に最新の状態を確認
+    });
+
+    if (response.ok) {
+      return true;
+    }
+
+    // HEADが405（Method Not Allowed）や501（Not Implemented）を返した場合、
+    // GETリクエストで確認を試みる
+    if (response.status === 405 || response.status === 501) {
+      const getResponse = await fetch(filePath, {
+        method: 'GET',
+        cache: 'no-cache',
+        headers: {
+          'Range': 'bytes=0-0' // 最初の1バイトだけを取得
+        }
+      });
+      return getResponse.ok || getResponse.status === 206; // 206はPartial Content
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// 最新のCSVファイルを動的に検出
+async function discoverLatestFiles(basePath: string, type: 'repositories' | 'repositories-summary'): Promise<Array<{date: string, year: string, month: string, filename: string, path: string}>> {
+  const discoveredFiles: Array<{date: string, year: string, month: string, filename: string, path: string}> = [];
+
+  // 現在から過去30日間のファイルを検出
+  const today = new Date();
+
+  for (let i = 0; i < 30; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() - i);
+
+    const dateStr = formatDate(checkDate);
+
+    // ファイルの存在を確認
+    const exists = await checkFileExists(basePath, type, dateStr);
+    if (exists) {
+      const dateObj = parseDate(dateStr);
+      const year = String(dateObj.getFullYear());
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const filename = type === 'repositories'
+        ? `repositories-${dateStr}.csv`
+        : `repositories-summary-${dateStr}.csv`;
+
+      discoveredFiles.push({
+        date: dateStr,
+        year: year,
+        month: month,
+        filename: filename,
+        path: `/data/${type}/${year}/${month}/${filename}`
+      });
+    }
+  }
+
+  // 日付でソート（新しい順）
+  discoveredFiles.sort((a, b) => b.date.localeCompare(a.date));
+  return discoveredFiles;
+}
 
 async function getAvailableCsvFiles(basePath: string): Promise<CsvFileList> {
-  // キャッシュがあればそれを返す
-  if (cachedFileList) {
+  const now = Date.now();
+
+  // キャッシュが有効な場合はそれを返す
+  if (cachedFileList && (now - cacheTimestamp) < CACHE_DURATION) {
     return cachedFileList;
   }
 
   try {
-    // ビルド時に生成されたJSONファイルを読み込む
-    const response = await fetch(`${basePath}/csv-file-list.json`);
-    if (!response.ok) {
-      throw new Error('CSVファイルリストの読み込みに失敗しました');
-    }
-    const data = await response.json() as CsvFileList;
-    cachedFileList = data;
-    return data;
+    // 最新のファイルを動的に検出
+    const [discoveredRepositories, discoveredSummaries] = await Promise.all([
+      discoverLatestFiles(basePath, 'repositories'),
+      discoverLatestFiles(basePath, 'repositories-summary')
+    ]);
+
+    const result: CsvFileList = {
+      repositories: discoveredRepositories,
+      'repositories-summary': discoveredSummaries
+    };
+
+    // キャッシュを更新
+    cachedFileList = result;
+    cacheTimestamp = now;
+
+    return result;
   } catch (error) {
     console.error('CSVファイルリスト読み込みエラー:', error);
-    // エラー時は空のリストを返す
-    return { repositories: [], 'repositories-summary': [] };
+    // エラー時は既存のキャッシュがあればそれを返す、なければ空のリストを返す
+    return cachedFileList || { repositories: [], 'repositories-summary': [] };
   }
 }
 
